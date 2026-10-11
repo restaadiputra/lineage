@@ -3,6 +3,7 @@ import type { Diagnostic } from '../model/parse'
 import { analyze, type ValidFlow } from './analyze'
 import { appendIgnore } from './append-ignore'
 import { buildComparison, type Comparison } from './comparison'
+import { applyEdits, type FlowEdit } from './edit-flow'
 import type { KeyValueStore } from './ports'
 import { loadSettings, saveSettings, type EdgeGroup, type Settings } from './settings'
 
@@ -22,6 +23,9 @@ export interface OpenFile {
 
 export const INSPECTOR_TABS = ['details', 'problems', 'compare'] as const
 export type InspectorTab = (typeof INSPECTOR_TABS)[number]
+
+/** The dialogs that open over the app. One at a time. */
+export type DialogName = 'search' | 'add-node' | 'connect'
 
 export interface FlowState {
   yaml: string
@@ -43,6 +47,7 @@ export interface FlowState {
   /** set while the flow (the plan) is compared with a second flow file (the code) */
   comparison: Comparison | null
   inspectorTab: InspectorTab
+  dialog: DialogName | null
 
   /** Editor typing: text updates now, analysis follows after the debounce. */
   setYaml(text: string): void
@@ -59,6 +64,14 @@ export interface FlowState {
   compareWith(fileName: string, yamlText: string): void
   stopComparing(): void
   setInspectorTab(tab: InspectorTab): void
+  /** Open a dialog. Connect needs a selected node and says so when there is none. */
+  openDialog(dialog: DialogName): void
+  closeDialog(): void
+  /**
+   * Make a change from the canvas by writing it into the YAML. Nothing is
+   * changed, and false is returned, when the result would not be a valid flow.
+   */
+  applyEdits(edits: FlowEdit[]): boolean
   setFile(file: OpenFile | null): void
   setDiskText(text: string | null): void
   notify(notice: string | null): void
@@ -117,6 +130,7 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
       notice: null,
       comparison: null,
       inspectorTab: 'details',
+      dialog: null,
 
       setYaml(text) {
         if (text === get().yaml) return
@@ -166,6 +180,37 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
       },
 
       setInspectorTab: (inspectorTab) => set({ inspectorTab }),
+
+      openDialog(dialog) {
+        if (dialog === 'connect' && !get().selection) {
+          get().notify('Select a node first, then connect it.')
+          return
+        }
+        set({ dialog })
+      },
+
+      closeDialog: () => set({ dialog: null }),
+
+      applyEdits(edits) {
+        const refuse = (why: string) => {
+          get().notify(why)
+          return false
+        }
+        if (get().comparison) return refuse('Stop comparing before editing on the canvas.')
+        if (get().diagnostics.some((d) => d.severity === 'error')) return refuse('Fix the errors in the YAML before editing on the canvas.')
+
+        let next: string
+        try {
+          next = applyEdits(get().yaml, edits)
+        } catch (error) {
+          return refuse(`Could not make that change: ${error instanceof Error ? error.message : String(error)}`)
+        }
+        // Check before committing: a change made by a click must never leave the file broken.
+        const problem = analyze(next).diagnostics.find((d) => d.severity === 'error')
+        if (problem) return refuse(`Could not make that change: ${problem.message}`)
+        get().loadYaml(next)
+        return true
+      },
       setFile: (file) => set({ file }),
       setDiskText: (diskText) => set({ diskText }),
       notify: (notice) => set({ notice }),

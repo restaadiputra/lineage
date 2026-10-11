@@ -47,7 +47,10 @@ src/app/                    Application layer (no React, no browser globals; all
   flow-store.ts             zustand store: yaml, diagnostics, last valid flow, selection, settings, file state
   analyze.ts                YAML text → diagnostics + graph + problems
   file-session.ts           Open / save / watch the file on disk (reload or "keep mine")
-  append-ignore.ts          Adds an entry to `ignore:` without reformatting the file
+  yaml-list.ts              Adds items to lists in the YAML text without reformatting the file
+  edit-flow.ts              FlowEdit (node / edge / list item), Add node draft and validation
+  connect.ts                relationsBetween(): the ways two nodes can be connected
+  append-ignore.ts          Adds an entry to `ignore:` (uses yaml-list)
   layout-file.ts            `.flow.layout.json` format; layout-exchange.ts exports / imports it
   comparison.ts             Comparison = code flow + diff + merged graph; compare-session.ts picks the code file
   search.ts, prompts.ts, settings.ts, position-repository.ts, describe-component.ts,
@@ -55,7 +58,8 @@ src/app/                    Application layer (no React, no browser globals; all
 src/canvas/                 Pure canvas model: view-edges, focus (impact → roles), diff-view (plan vs code),
                             layout (ELK), node-size, edge-geometry, badges, viewport
 src/adapters/               Browser implementations of the ports (localStorage, clipboard, files)
-src/ui/                     React: shell/ (top bar, status bar, search, Ask AI menu), editor/, canvas/, inspector/
+src/ui/                     React: shell/ (top bar, status bar, search, menus), editor/, canvas/, inspector/,
+                            editing/ (Add node and Connect dialogs)
 src/main.tsx                Composition root: the only place that picks adapters
 ```
 
@@ -197,7 +201,13 @@ at 1280px wide, contrast AA. Motion only in response to actions (selection
 fade, pan to node).
 
 ## Roadmap after v1
-- Canvas editing (keyboard-first add node / connect), writing back to YAML
+- ~~Canvas editing (keyboard-first add node / connect), writing back to YAML~~ Done for adding:
+  N (or the toolbar) opens Add node: kind, id, owner / type / parent as the kind needs. C connects the selected
+  node: pick the other node, then one of the relations valid for that pair (renders, prop, reads, writes,
+  derives, effect deps / sets). Edits are spliced into the YAML text in the style around them, never by
+  re-serialising the file; an edit that would make the flow invalid is refused. Ctrl+Z in the editor undoes.
+  Not done: deleting, renaming, editing fields of an existing node or edge, drag-to-connect. Those are still
+  YAML-only.
 - ~~Plan vs code comparison (diff two flow files)~~ Done: flow menu → Compare with code… opens a second flow
   file. The open flow is "the plan", the second file "the code". Both are drawn as one merged diagram: nodes and
   edges are tagged plan only (blue, dashed), code only (green) or changed (amber); a Compare tab lists every

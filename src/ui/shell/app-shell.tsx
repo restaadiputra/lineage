@@ -1,5 +1,7 @@
-import { useCallback, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { PANEL_LIMITS } from '../../app/settings'
+import { AddNodeDialog } from '../editing/add-node-dialog'
+import { ConnectDialog } from '../editing/connect-dialog'
 import { useFlow } from '../app-context'
 import { CompareBar } from './compare-bar'
 import { DiskChangeBanner } from './disk-change-banner'
@@ -21,12 +23,8 @@ interface AppShellProps {
 
 /** Top bar, three full-bleed panels and the status bar. Knows nothing about panel contents. */
 export function AppShell({ editor, canvas, inspector }: AppShellProps) {
-  const [searchOpen, setSearchOpen] = useState(false)
-  const openSearch = useCallback(() => setSearchOpen(true), [])
-  const closeSearch = useCallback(() => setSearchOpen(false), [])
-
   useTheme()
-  useShortcuts({ onSearch: openSearch })
+  useShortcuts()
   useFileWatch()
   const dropping = useFileDrop()
   const { editorOpen, editorWidth, inspectorWidth } = useFlow((s) => s.settings)
@@ -34,7 +32,7 @@ export function AppShell({ editor, canvas, inspector }: AppShellProps) {
 
   return (
     <div className="shell" data-dropping={dropping || undefined}>
-      <TopBar onSearch={openSearch} />
+      <TopBar />
       <div className="banners">
         <DiskChangeBanner />
         <CompareBar />
@@ -69,7 +67,9 @@ export function AppShell({ editor, canvas, inspector }: AppShellProps) {
         </aside>
       </div>
       <StatusBar />
-      <SearchDialog open={searchOpen} onClose={closeSearch} />
+      <SearchDialog />
+      <AddNodeDialog />
+      <ConnectDialog />
     </div>
   )
 }

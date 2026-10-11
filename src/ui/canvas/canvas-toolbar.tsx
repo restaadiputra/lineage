@@ -18,6 +18,10 @@ export function CanvasToolbar({ onRelayout }: { onRelayout(): void }) {
   const filters = useFlow((s) => s.settings.edgeFilters)
   const toggle = useFlow((s) => s.toggleEdgeFilter)
   const { fitView } = useReactFlow()
+  const openDialog = useFlow((s) => s.openDialog)
+  // Editing writes to the plan; while a comparison is drawn over it that would be confusing.
+  const comparing = useFlow((s) => !!s.comparison)
+  const editHint = comparing ? 'Stop comparing to edit' : undefined
 
   return (
     <div className="panel__header canvas-toolbar">
@@ -35,6 +39,15 @@ export function CanvasToolbar({ onRelayout }: { onRelayout(): void }) {
           </button>
         ))}
       </div>
+      <span className="top-bar__rule" />
+      <button type="button" className="btn" disabled={comparing} title={editHint} onClick={() => openDialog('add-node')}>
+        Add node
+        <kbd>N</kbd>
+      </button>
+      <button type="button" className="btn" disabled={comparing} title={editHint} onClick={() => openDialog('connect')}>
+        Connect
+        <kbd>C</kbd>
+      </button>
       <span className="top-bar__spacer" />
       <button
         type="button"

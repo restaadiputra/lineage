@@ -18,11 +18,12 @@ function FlowTitle() {
   )
 }
 
-export function TopBar({ onSearch }: { onSearch(): void }) {
+export function TopBar() {
   const { files } = useServices()
   const theme = useFlow((s) => s.settings.theme)
   const editorOpen = useFlow((s) => s.settings.editorOpen)
   const updateSettings = useFlow((s) => s.updateSettings)
+  const openDialog = useFlow((s) => s.openDialog)
   const nextTheme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]
   const themeLabel = theme[0].toUpperCase() + theme.slice(1)
 
@@ -50,7 +51,7 @@ export function TopBar({ onSearch }: { onSearch(): void }) {
       <span className="top-bar__rule" />
       <AskAiMenu />
       <span className="top-bar__spacer" />
-      <button type="button" className="btn top-bar__search" onClick={onSearch}>
+      <button type="button" className="btn top-bar__search" onClick={() => openDialog('search')}>
         <SearchIcon />
         Search
         <kbd>{MOD}K</kbd>

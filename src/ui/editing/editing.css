@@ -1,0 +1,72 @@
+/* Forms inside the Add node and Connect dialogs. */
+.form {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.form__title {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+/* The Connect dialog's title sits above a full-bleed search field. */
+.form__title--padded {
+  padding: 14px 14px 0;
+}
+
+.form__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.form__choices legend {
+  margin-bottom: 4px;
+  padding: 0;
+  color: var(--muted);
+}
+
+.form__choices--stacked {
+  display: grid;
+  gap: 6px;
+}
+
+.form__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.form__choice input {
+  margin: 0;
+  accent-color: var(--source);
+}
+
+.form__field {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.form__field .input {
+  color: var(--ink);
+}
+
+.form__error {
+  min-height: 1lh;
+  color: var(--error);
+}
+
+.form__actions {
+  display: flex;
+  gap: 4px;
+}
+
+.form__empty {
+  color: var(--muted);
+}

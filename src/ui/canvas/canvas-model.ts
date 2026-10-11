@@ -57,12 +57,13 @@ interface NodeInputs {
 
 export function buildCanvasNodes({ valid, positions, focus, selectedId, diff }: NodeInputs): CanvasNode[] {
   const badges = problemBadges(valid.problems.active)
-  return valid.flow.nodes.map((node) => {
+  // A node added a moment ago has no position until the layout finishes; drawing it at 0,0 would make it jump.
+  return valid.flow.nodes.filter((node) => positions[node.id]).map((node) => {
     const nodeFocus = focus?.nodes.get(node.id) ?? null
     return {
       id: node.id,
       type: NODE_TYPE[node.kind],
-      position: positions[node.id] ?? { x: 0, y: 0 },
+      position: positions[node.id],
       ...sizeOf(node),
       selected: node.id === selectedId,
       data: {
@@ -81,11 +82,14 @@ interface EdgeInputs {
   focus: FocusView | null
   filters: Settings['edgeFilters']
   diff?: FlowDiff | null
+  /** when given, edges to nodes that are not placed yet are left out */
+  positions?: Positions | null
 }
 
-export function buildCanvasEdges({ viewEdges, focus, filters, diff }: EdgeInputs): CanvasEdge[] {
+export function buildCanvasEdges({ viewEdges, focus, filters, diff, positions }: EdgeInputs): CanvasEdge[] {
+  const placed = (id: string) => !positions || !!positions[id]
   return viewEdges
-    .filter((edge) => filters[edge.group])
+    .filter((edge) => filters[edge.group] && placed(edge.source) && placed(edge.target))
     .map((edge) => {
       const edgeFocus = focus?.edges.get(edge.id) ?? null
       const difference = diff ? edgeDiffView(edge, diff) : null

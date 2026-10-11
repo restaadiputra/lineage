@@ -12,24 +12,25 @@ import { FlowCanvas } from './flow-canvas'
 const valid = analyze(sample).valid!
 const viewEdges = buildViewEdges(valid.graph)
 const ALL = { tree: true, reads: true, writes: true, ownership: true }
+/** A position for every node, as after a layout. */
+const everywhere = Object.fromEntries(valid.flow.nodes.map((n, i) => [n.id, { x: i * 10, y: i * 20 }]))
 
 describe('buildCanvasNodes', () => {
   const build = (selectedId?: string) =>
     buildCanvasNodes({
       valid,
-      positions: { orders: { x: 40, y: 80 } },
+      positions: { ...everywhere, orders: { x: 40, y: 80 } },
       focus: computeFocus(valid.graph, viewEdges, selectedId ? { id: selectedId } : null),
       selectedId,
     })
   const byId = (nodes: ReturnType<typeof build>, id: string) => nodes.find((n) => n.id === id)!
 
-  it('gives every node a type, a fixed size and its saved position', () => {
+  it('gives every placed node a type, a fixed size and its saved position', () => {
     const nodes = build()
     expect(nodes).toHaveLength(valid.flow.nodes.length)
     expect(byId(nodes, 'orders')).toMatchObject({ type: 'data', position: { x: 40, y: 80 }, height: 48 })
     expect(byId(nodes, 'App').type).toBe('component')
     expect(byId(nodes, 'syncOrders').type).toBe('effect')
-    expect(byId(nodes, 'App').position).toEqual({ x: 0, y: 0 })
   })
 
   it('carries problem badges', () => {
@@ -47,6 +48,20 @@ describe('buildCanvasNodes', () => {
     expect(byId(nodes, 'orders')).toMatchObject({ selected: true, data: { dimmed: false, focus: { roles: ['source'] } } })
     expect(byId(nodes, 'OrderList').data.focus?.roles).toEqual(['reader'])
     expect(byId(nodes, 'SearchBox').data).toMatchObject({ dimmed: true, focus: null })
+  })
+})
+
+describe('nodes that are not placed yet', () => {
+  const { App: _unplaced, ...placed } = everywhere
+
+  it('are left off the canvas, with their edges, until the layout gives them a position', () => {
+    const nodes = buildCanvasNodes({ valid, positions: placed, focus: null, selectedId: undefined })
+    expect(nodes.map((n) => n.id)).not.toContain('App')
+    expect(nodes).toHaveLength(valid.flow.nodes.length - 1)
+
+    const edges = buildCanvasEdges({ viewEdges, focus: null, filters: ALL, positions: placed })
+    expect(edges.some((e) => e.source === 'App' || e.target === 'App')).toBe(false)
+    expect(edges.length).toBeGreaterThan(0)
   })
 })
 

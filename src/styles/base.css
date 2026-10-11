@@ -110,3 +110,18 @@ code,
 .input::placeholder {
   color: var(--muted);
 }
+
+/* The one action a form is for. */
+.btn--primary {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.btn--primary:hover,
+.btn--primary:active {
+  background: color-mix(in srgb, var(--ink) 85%, var(--surface));
+}
+
+select.input {
+  padding: 0 4px;
+}

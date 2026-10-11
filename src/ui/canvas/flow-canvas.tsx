@@ -55,19 +55,22 @@ function useFrameOnLayout(layoutId: number, rects: Rect[] | null, container: Ref
 }
 
 /** Pan to the selected node whenever something asks to reveal it (a problem, a search result, a link). */
-function useRevealSelection() {
+function useRevealSelection(nodeCount: number) {
   const { store } = useServices()
   const revealToken = useFlow((s) => s.revealToken)
   const { getInternalNode, getZoom, setCenter } = useReactFlow()
+  const handled = useRef(0)
   useEffect(() => {
     const id = store.getState().selection?.id
     const node = id ? getInternalNode(id) : undefined
-    if (revealToken === 0 || !node) return
+    // A node that was just added is not on the canvas yet: wait until it is (nodeCount changes).
+    if (revealToken === handled.current || !node) return
+    handled.current = revealToken
     const { x, y } = node.internals.positionAbsolute
     const center = { x: x + (node.measured.width ?? 0) / 2, y: y + (node.measured.height ?? 0) / 2 }
     // Keep the user's zoom unless the text would be too small to read.
     void setCenter(center.x, center.y, { zoom: Math.max(getZoom(), READABLE_ZOOM), duration: fitOptions().duration })
-  }, [revealToken, store, getInternalNode, getZoom, setCenter])
+  }, [revealToken, nodeCount, store, getInternalNode, getZoom, setCenter])
 }
 
 /** Node ids React Flow just selected / deselected, and nodes the user finished dragging. */
@@ -105,7 +108,10 @@ function Diagram({ valid }: { valid: ValidFlow }) {
     () => (positions ? buildCanvasNodes({ valid, positions, focus, selectedId, diff }) : []),
     [valid, positions, focus, selectedId, diff],
   )
-  const edges = useMemo(() => buildCanvasEdges({ viewEdges, focus, filters, diff }), [viewEdges, focus, filters, diff])
+  const edges = useMemo(
+    () => buildCanvasEdges({ viewEdges, focus, filters, diff, positions }),
+    [viewEdges, focus, filters, diff, positions],
+  )
   const { nodes, onNodesChange } = useSyncedNodes(model)
   const container = useRef<HTMLDivElement>(null)
   const rects = useMemo(
@@ -113,7 +119,7 @@ function Diagram({ valid }: { valid: ValidFlow }) {
     [positions, layoutNodes],
   )
   useFrameOnLayout(layoutId, rects, container)
-  useRevealSelection()
+  useRevealSelection(nodes.length)
 
   const handleNodesChange = useCallback(
     (changes: NodeChange<CanvasNode>[]) => {
@@ -153,6 +159,7 @@ function Diagram({ valid }: { valid: ValidFlow }) {
 
 export function FlowCanvas() {
   const valid = useShownFlow()
+  const openDialog = useFlow((s) => s.openDialog)
   if (!valid) {
     return (
       <p className="canvas-empty">
@@ -162,10 +169,16 @@ export function FlowCanvas() {
   }
   if (valid.flow.nodes.length === 0) {
     return (
-      <p className="canvas-empty">
-        This flow has no nodes yet. Add components and data under <code>nodes:</code> in the YAML, or use Ask AI to
-        have your assistant write the file from your code.
-      </p>
+      <div className="canvas-empty">
+        <p>
+          This flow has no nodes yet. Add the first one here, write them under <code>nodes:</code> in the YAML, or use
+          Ask AI to have your assistant write the file from your code.
+        </p>
+        <button type="button" className="btn btn--outline" onClick={() => openDialog('add-node')}>
+          Add a node
+          <kbd>N</kbd>
+        </button>
+      </div>
     )
   }
   return (

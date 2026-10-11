@@ -153,6 +153,14 @@ export function FlowCanvas() {
       </p>
     )
   }
+  if (valid.flow.nodes.length === 0) {
+    return (
+      <p className="canvas-empty">
+        This flow has no nodes yet. Add components and data under <code>nodes:</code> in the YAML, or use Ask AI to
+        have your assistant write the file from your code.
+      </p>
+    )
+  }
   return (
     <ReactFlowProvider>
       <Diagram valid={valid} />

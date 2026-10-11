@@ -13,6 +13,8 @@ export interface AppServices {
   files: FileSession
   /** docs/FORMAT.md, handed to the user's AI by the Ask AI menu */
   formatDoc: string
+  /** the built-in example flow, offered again from the flow menu */
+  sampleYaml: string
 }
 
 export const AppContext = createContext<AppServices | null>(null)

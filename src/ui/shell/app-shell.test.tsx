@@ -94,6 +94,49 @@ describe('top bar', () => {
   })
 })
 
+describe('flow menu', () => {
+  afterEach(() => void vi.restoreAllMocks())
+  const pick = async (user: ReturnType<typeof renderShell>['user'], flowName: string, item: string) => {
+    await user.click(screen.getByRole('button', { name: flowName }))
+    await user.click(screen.getByRole('menuitem', { name: item }))
+  }
+
+  it('starts a new, empty flow without asking when nothing would be lost', async () => {
+    const confirm = vi.spyOn(window, 'confirm')
+    const { user, store } = renderShell()
+    await pick(user, 'Orders dashboard', 'New flow')
+
+    expect(confirm).not.toHaveBeenCalled()
+    expect(store.getState().valid?.flow).toMatchObject({ name: 'Untitled flow', nodes: [] })
+    expect(statusBar().getByText('0 nodes')).toBeInTheDocument()
+
+    await pick(user, 'Untitled flow', 'Load the sample')
+    expect(store.getState().valid?.flow.name).toBe('Orders dashboard')
+  })
+
+  it('asks before replacing YAML that is not saved anywhere, and respects No', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const { user, store } = renderShell({ yaml: flowYaml('My plan') })
+    await pick(user, 'My plan', 'Load the sample')
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(store.getState().valid?.flow.name).toBe('My plan')
+
+    confirm.mockReturnValue(true)
+    await pick(user, 'My plan', 'Load the sample')
+    expect(store.getState().valid?.flow.name).toBe('Orders dashboard')
+  })
+
+  it('lets go of the open file, so the next save cannot overwrite it', async () => {
+    const { user, store } = renderShell()
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    await screen.findByText('orders.flow.yaml')
+    await pick(user, 'On disk', 'New flow')
+
+    expect(store.getState().file).toBeNull()
+    expect(screen.queryByText('orders.flow.yaml')).not.toBeInTheDocument()
+  })
+})
+
 describe('panels', () => {
   it('resizes with the arrow keys and remembers the width', async () => {
     const { user, store } = renderShell()

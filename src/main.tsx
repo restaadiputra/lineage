@@ -24,6 +24,7 @@ const services: AppServices = {
   clipboard: createBrowserClipboard(),
   files: createFileSession({ store, files: createBrowserFiles() }),
   formatDoc,
+  sampleYaml,
 }
 
 createRoot(document.getElementById('root')!).render(

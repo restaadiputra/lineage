@@ -78,4 +78,9 @@ describe('FlowCanvas', () => {
     renderApp(<FlowCanvas />, { yaml: 'nodes: [' })
     expect(screen.getByText(/Nothing to draw yet/)).toBeInTheDocument()
   })
+
+  it('says how to begin when the flow is valid but has no nodes', () => {
+    renderApp(<FlowCanvas />, { yaml: 'version: 1\nname: Empty\n' })
+    expect(screen.getByText(/This flow has no nodes yet/)).toBeInTheDocument()
+  })
 })

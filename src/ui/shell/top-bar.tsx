@@ -1,17 +1,17 @@
 import { THEMES } from '../../app/settings'
 import { useFlow, useServices } from '../app-context'
 import { AskAiMenu } from './ask-ai-menu'
+import { FlowMenu } from './flow-menu'
 import { PanelLeftIcon, SearchIcon, ThemeIcon } from './icons'
 import { MOD } from './use-shortcuts'
 
-/** Flow name, the file it lives in, and whether the editor is ahead of the disk. */
+/** The flow's name (a menu for starting over), its file, and whether the editor is ahead of the disk. */
 function FlowTitle() {
-  const flowName = useFlow((s) => s.valid?.flow.name)
   const fileName = useFlow((s) => s.file?.name)
   const unsaved = useFlow((s) => !!s.file && s.file.savedText !== s.yaml)
   return (
     <span className="top-bar__flow">
-      {flowName}
+      <FlowMenu />
       {fileName && <span className="top-bar__file">{fileName}</span>}
       {unsaved && <span className="top-bar__unsaved">Unsaved changes</span>}
     </span>

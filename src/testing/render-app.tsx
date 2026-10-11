@@ -50,6 +50,7 @@ export function renderApp(ui: ReactNode, { yaml, diskText = flowYaml('On disk') 
     clipboard: { copy: async (text) => void copied.push(text) },
     files: createFileSession({ store, files: fake.files }),
     formatDoc: FORMAT_DOC,
+    sampleYaml: sample,
   }
 
   // userEvent.setup() must run before render so its document hooks are in place.

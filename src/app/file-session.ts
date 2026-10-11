@@ -12,6 +12,8 @@ export interface FileSession {
   open(): Promise<void>
   openDropped(transfer: DataTransfer): Promise<void>
   save(): Promise<void>
+  /** Replace the editor's text with a flow that belongs to no file (new flow, the sample). */
+  startNew(text: string): void
   /** Take the newer text from disk, dropping unsaved edits. */
   reloadFromDisk(): void
   /** Keep the editor's text; the next save overwrites the disk version. */
@@ -90,6 +92,15 @@ export function createFileSession({ store, files, pollMs = 1000 }: FileSessionDe
         state().setDiskText(null)
         state().notify(`Saved ${saved.ref.name}`)
       }),
+
+    startNew(text) {
+      // Forget the file: the next save must ask where to put this flow, not overwrite the old one.
+      ref = null
+      lastModified = 0
+      state().loadYaml(text)
+      state().setFile(null)
+      state().setDiskText(null)
+    },
 
     reloadFromDisk() {
       const { diskText, file } = state()

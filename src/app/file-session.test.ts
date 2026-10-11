@@ -4,6 +4,7 @@ import sample from '../samples/orders.flow.yaml?raw'
 import { fakeDisk } from '../testing/fake-disk'
 import { createFileSession } from './file-session'
 import { createFlowStore } from './flow-store'
+import { hasUnsavedWork, NEW_FLOW_YAML } from './new-flow'
 import { codeToDiagramPrompt, diagramToCodePrompt } from './prompts'
 import { searchNodes } from './search'
 
@@ -86,6 +87,20 @@ describe('file session', () => {
     expect(store.getState().notice).toBe('Saved orders.flow.yaml')
   })
 
+  it('starts a new flow detached from the file, so saving cannot overwrite it', async () => {
+    const { store, session, disk } = setup()
+    await session.open()
+    session.startNew(NEW_FLOW_YAML)
+    expect(store.getState().file).toBeNull()
+    expect(store.getState().valid?.flow.name).toBe('Untitled flow')
+
+    // The old file changing on disk is no longer this flow's business.
+    disk.text = flow('Changed')
+    disk.lastModified += 1
+    await session.checkDisk()
+    expect(store.getState().valid?.flow.name).toBe('Untitled flow')
+  })
+
   it('reports a failed save as a notice', async () => {
     const { store, session, files } = setup()
     files.save = async () => {
@@ -119,5 +134,21 @@ describe('prompts', () => {
     const prompt = diagramToCodePrompt('# FORMAT', flow('Mine'))
     expect(prompt).toContain('```yaml\nversion: 1\nname: Mine\n```')
     expect(prompt).toContain('# FORMAT')
+  })
+})
+
+describe('hasUnsavedWork', () => {
+  const disposable = [sample, NEW_FLOW_YAML]
+
+  it('without a file, only text the user wrote is at risk', () => {
+    expect(hasUnsavedWork({ yaml: sample, file: null }, disposable)).toBe(false)
+    expect(hasUnsavedWork({ yaml: NEW_FLOW_YAML, file: null }, disposable)).toBe(false)
+    expect(hasUnsavedWork({ yaml: flow('Mine'), file: null }, disposable)).toBe(true)
+  })
+
+  it('with a file, only edits since the last save are at risk', () => {
+    const file = { name: 'a.flow.yaml', savedText: flow('Mine') }
+    expect(hasUnsavedWork({ yaml: flow('Mine'), file }, disposable)).toBe(false)
+    expect(hasUnsavedWork({ yaml: flow('Mine, edited'), file }, disposable)).toBe(true)
   })
 })

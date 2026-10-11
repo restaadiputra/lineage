@@ -20,7 +20,8 @@ calls). Fonts are bundled from `@fontsource-variable/*`.
 ```
 npm install
 npm run dev        # Vite dev server
-npm test           # vitest (engine tests)
+npm test           # vitest: engine, application layer and React component tests (jsdom)
+npm run test:e2e   # Playwright, Chromium at 1280x800; starts its own dev server on port 5180
 npm run build      # tsc -b && vite build
 npm run lint       # oxlint
 ```
@@ -71,9 +72,19 @@ Key semantics:
 ## Status
 
 Done: engine (format, parser, graph, impact, 13 rules) and the version 1 UI
-described below, steps 1 to 10. 68 tests cover the engine, the application layer
-and the pure canvas model; the React layer has no component tests and was
-verified by hand in a browser (light and dark, impact on `orders`, clean console).
+described below, steps 1 to 11.
+
+Tests:
+- `src/**/*.test.ts`: engine, application layer and pure canvas model (node).
+- `src/**/*.test.tsx`: React components in jsdom, rendered through
+  `src/testing/render-app.tsx` with in-memory adapters. They start with
+  `// @vitest-environment jsdom`. jsdom has no layout, so React Flow rendering
+  and editor typing are left to Playwright.
+- `e2e/*.spec.ts`: Playwright. The `app` fixture loads the sample and fails a
+  test when the browser console has an error or warning. File tests use the
+  upload/download fallback and real handles from the browser's private file
+  system, because native file pickers cannot be automated. First run needs
+  `npx playwright install --only-shell chromium`.
 
 Dependencies point inward: model/analysis ← app and canvas ← adapters and ui ←
 main.tsx. New UI behaviour goes into `src/app` or `src/canvas` as a pure,

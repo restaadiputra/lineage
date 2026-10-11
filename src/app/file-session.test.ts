@@ -1,37 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { createMemoryStorage } from '../adapters/memory-storage'
 import sample from '../samples/orders.flow.yaml?raw'
+import { fakeDisk } from '../testing/fake-disk'
 import { createFileSession } from './file-session'
 import { createFlowStore } from './flow-store'
-import type { FileGateway, FileRef } from './ports'
 import { codeToDiagramPrompt, diagramToCodePrompt } from './prompts'
 import { searchNodes } from './search'
 
 const flow = (name: string) => `version: 1\nname: ${name}\n`
-
-/** A one-file disk that tests can edit behind the app's back. */
-function fakeDisk(text: string) {
-  const ref: FileRef = { name: 'orders.flow.yaml', handle: {} }
-  const disk = { text, lastModified: 1, cancelled: false }
-  const opened = () => ({ ref, text: disk.text, lastModified: disk.lastModified })
-  const files: FileGateway = {
-    open: async () => (disk.cancelled ? null : opened()),
-    fromDrop: async () => opened(),
-    read: async () => opened(),
-    lastModified: async () => disk.lastModified,
-    async save(_ref, saved) {
-      disk.text = saved
-      disk.lastModified += 1
-      return { ref, lastModified: disk.lastModified }
-    },
-    download: () => {},
-  }
-  const edit = (next: string) => {
-    disk.text = next
-    disk.lastModified += 1
-  }
-  return { files, disk, edit }
-}
 
 function setup(diskText = flow('On disk')) {
   const store = createFlowStore({ storage: createMemoryStorage(), sampleYaml: sample })

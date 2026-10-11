@@ -1,0 +1,182 @@
+# Sample flow: an orders dashboard with a few common design flaws.
+# Open Problems to see them. Click any data node (state, context, store, query)
+# to see who reads it, who writes it, and what re-renders when it changes.
+version: 1
+name: Orders dashboard
+
+types:
+  Order:
+    id: string
+    customer: Customer
+    status: "'draft' | 'paid' | 'shipped'"
+    items: Item[]
+  Item:
+    sku: string
+    qty: number
+    price: number
+  Customer:
+    id: string
+    name: string
+  Cart:
+    items: Item[]
+    count: number
+    add: "(item: Item) => void"
+  UIState:
+    theme: "'light' | 'dark'"
+    sidebarOpen: boolean
+    density: "'comfortable' | 'compact'"
+
+nodes:
+  - id: App
+    kind: component
+    renders: [Header, OrdersPage]
+    source: src/App.tsx:12
+
+  - id: searchTerm
+    kind: state
+    owner: App
+    type: string
+    updates: often
+    source: src/App.tsx:14
+
+  - id: CartContext
+    kind: context
+    provider: App
+    type: Cart
+    stable: false
+    updates: often
+    source: src/cart/CartProvider.tsx:9
+
+  - id: uiStore
+    kind: store
+    library: zustand
+    type: UIState
+    source: src/stores/ui.ts:5
+
+  - id: Header
+    kind: component
+    props: { search: string }
+    renders: [SearchBox, CartBadge]
+    source: src/layout/Header.tsx:7
+
+  - id: SearchBox
+    kind: component
+    props: { value: string }
+    source: src/layout/SearchBox.tsx:4
+
+  - id: CartBadge
+    kind: component
+
+  - id: OrdersPage
+    kind: component
+    renders: [Layout, OrderSummary, CheckoutButton]
+    source: src/orders/OrdersPage.tsx:18
+
+  - id: ordersQuery
+    kind: query
+    library: react-query
+    key: "['orders']"
+    type: Order[]
+    source: src/orders/api.ts:11
+
+  - id: orders
+    kind: state
+    owner: OrdersPage
+    type: Order[]
+    source: src/orders/OrdersPage.tsx:20
+
+  - id: selectedId
+    kind: state
+    owner: OrdersPage
+    type: string | null
+
+  - id: total
+    kind: state
+    owner: OrdersPage
+    type: number
+
+  - id: syncOrders
+    kind: effect
+    owner: OrdersPage
+    deps: [ordersQuery]
+    sets: [orders]
+    source: src/orders/OrdersPage.tsx:24
+
+  - id: computeTotal
+    kind: effect
+    owner: OrdersPage
+    deps: [orders]
+    sets: [total]
+    source: src/orders/OrdersPage.tsx:30
+
+  - id: Layout
+    kind: component
+    props: { orders: "Order[]", onSelect: "(id: string) => void" }
+    renders: [Sidebar]
+
+  - id: Sidebar
+    kind: component
+    props: { orders: "Order[]", onSelect: "(id: string) => void" }
+    renders: [OrderList]
+
+  - id: OrderList
+    kind: component
+    memo: true
+    props: { orders: "Order[]", onSelect: "(id: string) => void" }
+    renders:
+      - { id: OrderRow, list: { key: index } }
+    source: src/orders/OrderList.tsx:6
+
+  - id: OrderRow
+    kind: component
+    props: { order: Order, onSelect: "(id: string) => void" }
+    renders: [QtyStepper]
+
+  - id: QtyStepper
+    kind: component
+    props: { item: Item }
+    source: src/orders/QtyStepper.tsx:3
+
+  - id: OrderSummary
+    kind: component
+    props: { total: number }
+
+  - id: CheckoutButton
+    kind: component
+
+edges:
+  # Search: state lives in App, only the search box uses it
+  - { kind: prop, from: App, to: Header, name: search, data: searchTerm, used: false }
+  - { kind: prop, from: Header, to: SearchBox, name: value, data: searchTerm }
+  - { kind: writes, from: SearchBox, to: searchTerm, via: "onChange → setSearchTerm" }
+
+  # Global stores and context
+  - { kind: reads, from: uiStore, to: Header }
+  - { kind: reads, from: CartContext, to: CartBadge, fields: [count] }
+  - { kind: reads, from: CartContext, to: CheckoutButton, fields: [items] }
+  - { kind: reads, from: CartContext, to: QtyStepper, fields: [add] }
+
+  # Orders: server data copied into state, then a total derived in an effect
+  - { kind: reads, from: ordersQuery, to: OrdersPage }
+  - { kind: derives, from: ordersQuery, to: orders, via: syncOrders }
+  - { kind: derives, from: orders, to: total, via: computeTotal }
+
+  # orders travel down through Layout and Sidebar, which don't use them
+  - { kind: prop, from: OrdersPage, to: Layout, name: orders, data: orders, used: false }
+  - { kind: prop, from: OrdersPage, to: Layout, name: onSelect, callback: true, stable: false, used: false }
+  - { kind: prop, from: Layout, to: Sidebar, name: orders, data: orders, used: false }
+  - { kind: prop, from: Layout, to: Sidebar, name: onSelect, callback: true, stable: false, used: false }
+  - { kind: prop, from: Sidebar, to: OrderList, name: orders, data: orders }
+  - { kind: prop, from: Sidebar, to: OrderList, name: onSelect, callback: true, stable: false }
+  - { kind: prop, from: OrderList, to: OrderRow, name: order, data: "orders[]" }
+  - { kind: prop, from: OrderList, to: OrderRow, name: onSelect, callback: true }
+  - { kind: prop, from: OrderRow, to: QtyStepper, name: item, data: "orders[].items[]" }
+  - { kind: writes, from: OrderRow, to: selectedId, via: "onSelect → setSelectedId" }
+  - { kind: mutates, from: QtyStepper, to: orders, op: "item.qty += 1", fields: ["[].items[].qty"] }
+
+  - { kind: prop, from: OrdersPage, to: OrderSummary, name: total, data: total }
+
+ignore:
+  - rule: list-key
+    node: OrderList
+    reason: Orders are append-only and never reordered, so index keys are safe here.

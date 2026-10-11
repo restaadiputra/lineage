@@ -1,0 +1,96 @@
+/* Things that open above the panels: the Ask AI menu and the search dialog. */
+
+/* Menu */
+.menu {
+  position: relative;
+}
+
+.menu__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 240px;
+  padding: 4px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.menu__item {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menu__item:hover,
+.menu__item:focus-visible {
+  background: var(--hover);
+}
+
+/* Search */
+.search {
+  width: min(520px, calc(100vw - 32px));
+  margin-top: 12vh;
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.search::backdrop {
+  background: color-mix(in srgb, var(--canvas) 60%, transparent);
+}
+
+.search__input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-md);
+}
+
+.search__input:focus-visible {
+  outline: none;
+}
+
+.search__results {
+  max-height: 320px;
+  margin: 0;
+  padding: 4px;
+  overflow: auto;
+  list-style: none;
+}
+
+.search__result {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.search__result[aria-selected='true'] {
+  background: var(--hover);
+}
+
+.search__kind,
+.search__empty {
+  color: var(--muted);
+}
+
+.search__empty {
+  padding: 8px 10px;
+}

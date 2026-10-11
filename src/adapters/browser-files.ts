@@ -1,0 +1,116 @@
+import type { FileGateway, FileRef, OpenedFile } from '../app/ports'
+
+/**
+ * Files in the browser. Chrome and Edge have the File System Access API, which
+ * gives a handle that can be written back to and watched. Elsewhere this falls
+ * back to an upload input and a download, with a null handle.
+ */
+
+// Not in TypeScript's DOM library yet.
+interface PickerWindow {
+  showOpenFilePicker?(options?: object): Promise<FileSystemFileHandle[]>
+  showSaveFilePicker?(options?: object): Promise<FileSystemFileHandle>
+}
+interface HandleItem {
+  getAsFileSystemHandle?(): Promise<FileSystemHandle | null>
+}
+
+const TYPES = [{ description: 'Lineage flow', accept: { 'application/yaml': ['.yaml', '.yml'] } }]
+
+const pickers = () => window as unknown as PickerWindow
+const handleOf = (ref: FileRef | null) => (ref?.handle as FileSystemFileHandle | null | undefined) ?? null
+
+/** Closing a picker rejects with AbortError; that is a cancel, not a failure. */
+async function unlessCancelled<T>(pick: () => Promise<T>): Promise<T | null> {
+  try {
+    return await pick()
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return null
+    throw error
+  }
+}
+
+async function fromFile(file: File, handle: FileSystemFileHandle | null): Promise<OpenedFile> {
+  return { ref: { name: file.name, handle }, text: await file.text(), lastModified: file.lastModified }
+}
+
+const fromHandle = async (handle: FileSystemFileHandle) => fromFile(await handle.getFile(), handle)
+
+/** Fallback open: a hidden <input type="file">. */
+function pickWithInput(): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.yaml,.yml'
+    input.addEventListener('change', () => resolve(input.files?.[0] ?? null))
+    input.addEventListener('cancel', () => resolve(null))
+    input.click()
+  })
+}
+
+function download(name: string, text: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = name
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+async function write(handle: FileSystemFileHandle, text: string) {
+  const writable = await handle.createWritable()
+  await writable.write(text)
+  await writable.close()
+  return { ref: { name: handle.name, handle }, lastModified: (await handle.getFile()).lastModified }
+}
+
+export function createBrowserFiles(): FileGateway {
+  return {
+    async open() {
+      const { showOpenFilePicker } = pickers()
+      if (!showOpenFilePicker) {
+        const file = await pickWithInput()
+        return file && fromFile(file, null)
+      }
+      const picked = await unlessCancelled(() => showOpenFilePicker.call(window, { types: TYPES }))
+      return picked && fromHandle(picked[0])
+    },
+
+    async fromDrop(transfer) {
+      const item = [...transfer.items].find((i) => i.kind === 'file')
+      if (!item) return null
+      // Read both before awaiting: the DataTransfer is emptied once the drop event returns.
+      const file = item.getAsFile()
+      const handle = await (item as HandleItem).getAsFileSystemHandle?.()
+      if (handle?.kind === 'file') return fromHandle(handle as FileSystemFileHandle)
+      return file && fromFile(file, null)
+    },
+
+    async read(ref) {
+      const handle = handleOf(ref)
+      if (!handle) throw new Error(`${ref.name} cannot be re-read in this browser`)
+      return fromHandle(handle)
+    },
+
+    async lastModified(ref) {
+      const handle = handleOf(ref)
+      return handle ? (await handle.getFile()).lastModified : null
+    },
+
+    async save(ref, text, suggestedName) {
+      const existing = handleOf(ref)
+      if (existing) return write(existing, text)
+
+      const { showSaveFilePicker } = pickers()
+      const name = ref?.name ?? suggestedName
+      if (!showSaveFilePicker) {
+        download(name, text)
+        return { ref: { name, handle: null }, lastModified: Date.now() }
+      }
+      const picked = await unlessCancelled(() => showSaveFilePicker.call(window, { suggestedName: name, types: TYPES }))
+      return picked && write(picked, text)
+    },
+
+    download,
+  }
+}

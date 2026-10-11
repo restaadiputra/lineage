@@ -1,0 +1,183 @@
+# Lineage
+
+A diagram tool for React data flow. A `.flow.yaml` file describes components,
+state, context, stores, queries, effects and how data moves between them.
+Lineage draws it, simulates re-renders, shows the impact of changing any field,
+and checks the design against React rules.
+
+It is used in two directions:
+- **Before coding**: draw/write the plan, fix rule warnings, export it as a
+  prompt for an AI to implement.
+- **After coding**: an AI (any — often GitHub Copilot) reads code and writes the
+  `.flow.yaml` using `docs/FORMAT.md`; Lineage draws it so a human can
+  understand the flow and spot problems.
+
+The app has **no AI built in** and must work fully offline (no CDNs, no network
+calls). Fonts are bundled from `@fontsource-variable/*`.
+
+## Commands
+
+```
+npm install
+npm run dev        # Vite dev server
+npm test           # vitest (engine tests)
+npm run build      # tsc -b && vite build
+npm run lint       # oxlint
+```
+
+## Architecture
+
+```
+docs/FORMAT.md              Format spec written for the AI. Keep in sync with schema.ts.
+src/model/schema.ts         zod schema for the flow file (source of truth for the format)
+src/model/parse.ts          YAML → FlowFile, diagnostics with line numbers, semantic validation, nodeLines
+src/model/graph.ts          Graph indexes (children, parents, props, edges, owners), LCA helpers, edgeKey()
+src/model/paths.ts          Data paths: "orders[].items" ↔ ["orders","[]","items"], overlaps()
+src/model/typeExpr.ts       Tiny TS type reader + fieldTree() for the impact field picker
+src/analysis/impact.ts      computeImpact(): readers, carriers, writers, cascade, re-render simulation
+                            computeComponentFocus(): a component's parents, children, data
+src/analysis/rules.ts       runRules() → Problem[], RULES metadata, applyIgnores()
+src/analysis/analysis.test.ts
+src/samples/orders.flow.yaml  Sample with deliberate flaws (exercises every rule)
+
+src/app/                    Application layer (no React, no browser globals; all tested)
+  ports.ts                  KeyValueStore, Clipboard, FileGateway interfaces
+  flow-store.ts             zustand store: yaml, diagnostics, last valid flow, selection, settings, file state
+  analyze.ts                YAML text → diagnostics + graph + problems
+  file-session.ts           Open / save / watch the file on disk (reload or "keep mine")
+  append-ignore.ts          Adds an entry to `ignore:` without reformatting the file
+  search.ts, prompts.ts, settings.ts, position-repository.ts, describe-component.ts
+src/canvas/                 Pure canvas model: view-edges, focus (impact → roles), layout (ELK),
+                            node-size, edge-geometry, badges
+src/adapters/               Browser implementations of the ports (localStorage, clipboard, files)
+src/ui/                     React: shell/ (top bar, status bar, search, Ask AI menu), editor/, canvas/, inspector/
+src/main.tsx                Composition root: the only place that picks adapters
+```
+
+Engine rules (pure functions, all tested):
+mutation, effect-loop, prop-drilling, derived-state, server-state-copy,
+effect-chain, effect-derived-state, unstable-memo-prop, busy-context, list-key,
+state-too-high, whole-store, duplicate-state.
+
+Key semantics:
+- Paths overlap when one is a prefix of the other (immutable updates: changing
+  `orders[].status` changes `orders`, not `orders[].items`).
+- Re-render simulation: changed state → owner re-renders; context/store/query
+  readers re-render if their `fields` overlap; children of a re-rendering
+  component re-render unless `memo` and no prop carries changed data and no prop
+  is `stable: false`.
+- When the YAML is invalid, keep showing the last valid graph plus the errors.
+
+## Status
+
+Done: engine (format, parser, graph, impact, 13 rules) and the version 1 UI
+described below, steps 1 to 10. 68 tests cover the engine, the application layer
+and the pure canvas model; the React layer has no component tests and was
+verified by hand in a browser (light and dark, impact on `orders`, clean console).
+
+Dependencies point inward: model/analysis ← app and canvas ← adapters and ui ←
+main.tsx. New UI behaviour goes into `src/app` or `src/canvas` as a pure,
+tested function first; components stay thin.
+
+## Version 1 UI (built; this is the spec it follows)
+
+1. **Shell + store** (zustand): yaml text, last valid ParseResult + Graph,
+   problems, selection `{ id, fieldPath? }`, edge filters, theme, panel sizes.
+   Re-parse on edit, debounced ~250 ms. Load the sample on first run; persist
+   the last YAML in localStorage.
+2. **YAML editor** (left, resizable, collapsible): `@uiw/react-codemirror` +
+   `@codemirror/lang-yaml` + `@codemirror/lint` fed from diagnostics. Selecting
+   a node on the canvas scrolls the editor to `nodeLines[id]` and highlights it.
+3. **Canvas** (center): `@xyflow/react`.
+   - Layout with `elkjs/lib/elk.bundled.js`, layered, direction DOWN. Layout
+     edges: renders, owner→state/effect, provider→context, data→reader, derives.
+     Not prop or writes edges.
+   - Positions persisted in localStorage keyed by flow `name` + node id, never
+     in the YAML. "Re-layout" button resets.
+   - Edges drawn: one tree edge per parent→child pair (prop names shown as a
+     label only when highlighted), ownership (dotted, short), reads (solid),
+     writes (dashed), mutates (dashed, error color), derives (dotted).
+     Filter toggles for tree / reads / writes / ownership.
+   - Node badges: problem count with severity color.
+4. **Focus + impact**: click a data node → `computeImpact`; color source,
+   readers, writers, carriers, re-renders; dim everything else. Click a component
+   → `computeComponentFocus`. Esc clears. Legend in the inspector.
+5. **Inspector** (right, tab "Details"): per kind. Data nodes get the field tree
+   (click a field to narrow impact) and lists of readers / writers / carriers /
+   re-renders / skipped-by-memo, each with its reason. Components get props,
+   received props (with `data`, used, stable), reads, writes, children, parents.
+   Show `source` with a copy button.
+6. **Problems** (right, tab): grouped by severity, click selects and pans to
+   the node, expandable fix text, "Ignore" with an inline reason field that
+   appends `{ rule, node, reason }` to `ignore:` using the `yaml` Document API
+   (preserve comments). Ignored items listed collapsed at the bottom.
+7. **Search** (Ctrl/Cmd+K): find a node by id, Enter selects and pans to it.
+8. **Files**: Open / Save via the File System Access API (Chrome/Edge) with
+   **watching**: poll `getFile().lastModified` every second and reload when an
+   external tool (Copilot) edits the file; if the editor has unsaved changes,
+   show a banner "File changed on disk — Reload / Keep mine". Fallback: upload
+   input + download. Drag and drop a file onto the window.
+9. **Ask AI menu**: "Copy prompt: code → diagram" (FORMAT.md + "Read <files>
+   and write a .flow.yaml"), "Copy prompt: diagram → code" (FORMAT.md + the
+   current YAML), "Download FORMAT.md". Import FORMAT.md with `?raw`.
+10. **Status bar**: valid / n errors, node and edge counts, problem counts.
+    Shortcuts: Ctrl/Cmd+O open, Ctrl/Cmd+S save, Ctrl/Cmd+E toggle editor,
+    Ctrl/Cmd+K search, Esc clear selection. Theme: system / light / dark.
+11. **Verify**: Playwright screenshots (Chromium is at /opt/pw-browsers if
+    running in the cloud sandbox) in light and dark, with impact mode on
+    `orders`; check the browser console is clean.
+
+## Design direction: modern minimalism, practical
+
+The canvas is the product. Chrome stays quiet; color appears only when it
+carries meaning. The one memorable element is the impact view: when a data node
+is selected, its routes light up in color like lines on a transit map while
+everything else fades to grey.
+
+Layout (left aligned, full-bleed panels separated by hairlines, no floating cards):
+```
+┌ Lineage  Orders dashboard ▾ │ Open  Save │ Ask AI ▾ │ ⌘K Search │ ◐ ┐
+├─ YAML ───────┬──────────── canvas ────────────┬─ Details | Problems ─┤
+│ editor       │                                │ inspector            │
+│ (collapsible)│                                │                      │
+└──────────────┴────────────────────────────────┴──────────────────────┘
+  Valid · 22 nodes · 31 edges · 2 errors · 7 warnings     (status bar)
+```
+
+Tokens (define as CSS custom properties on `:root`, dark under
+`[data-theme="dark"]` and `prefers-color-scheme`):
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| canvas | #F3F5F4 | #121614 | canvas background |
+| surface | #FFFFFF | #1A1F1D | panels, nodes |
+| ink | #17201C | #E4E9E6 | text |
+| muted | #66706B | #8E9893 | secondary text |
+| hairline | #DCE1DE | #2A322E | borders, idle edges |
+| source | #2F55D4 | #7C97FF | selected data, focus ring |
+| reader | #0F8A6C | #3CC8A0 | reads |
+| writer | #D9480F | #FF8A4C | writes |
+| rerender | #7C3AED | #A98BFF | re-render outline |
+| error / warning / info | #C8323F / #B7791F / #4F6B8A | #F26B76 / #E0A84A / #8FA8C8 | problems |
+
+Type: Instrument Sans Variable for UI (13px base; scale 12 / 13 / 15 / 18,
+weights 400/500/600). JetBrains Mono Variable only for code identifiers
+(prop names, types, paths, YAML). Sentence case everywhere; no all-caps labels,
+no `→` appended to buttons.
+
+Shape encodes node kind (color is reserved for meaning):
+component = rectangle, 6px radius, name + up to 6 props in mono;
+state = capsule; context = capsule with double border; store = rectangle with
+a 3px left rule; query = rectangle with dashed border; effect = small tag.
+Kind shown as a muted word (`useState`, `zustand`, `react-query`), not a chip.
+
+Quality floor: visible keyboard focus, `prefers-reduced-motion` respected, works
+at 1280px wide, contrast AA. Motion only in response to actions (selection
+fade, pan to node).
+
+## Roadmap after v1
+- Canvas editing (keyboard-first add node / connect), writing back to YAML
+- Plan vs code comparison (diff two flow files)
+- Built-in code reader with ts-morph (no AI) to cross-check AI output
+- Layout file export (`.flow.layout.json`) for sharing positions in the repo
+- VS Code extension wrapper

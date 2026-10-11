@@ -1,0 +1,304 @@
+/* Tabs */
+.tabs {
+  gap: 0;
+  padding: 0 4px;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 8px;
+  border: 0;
+  /* The selected tab is marked by a rule on the panel's own hairline. */
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+/* Sections */
+.inspector__section {
+  padding: 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.inspector__section:last-child {
+  border-bottom: 0;
+}
+
+.inspector__section[data-empty] {
+  padding-block: 8px;
+  color: var(--muted);
+}
+
+.inspector__section[data-empty] .inspector__label {
+  margin-bottom: 0;
+  font-weight: 400;
+}
+
+.inspector__title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.inspector__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.inspector__count {
+  color: var(--muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.inspector__label .inspector__count {
+  margin-left: auto;
+}
+
+.inspector__muted {
+  color: var(--muted);
+}
+
+.inspector__note {
+  margin-top: 8px;
+}
+
+.fact {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.source code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--hairline);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.link:hover {
+  text-decoration-color: currentColor;
+}
+
+/* Node → reason rows */
+.rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rows li {
+  display: grid;
+  gap: 1px;
+}
+
+.rows__why {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.rows--mono {
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* Field tree */
+.fields {
+  margin: 0 -12px;
+  padding: 0;
+  list-style: none;
+}
+
+.field {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 3px 12px 3px 8px;
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-align: left;
+  cursor: pointer;
+}
+
+.field:hover {
+  background: var(--hover);
+}
+
+.field[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--source) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--source);
+}
+
+.field__type {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Legend */
+.legend {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* A miniature node: the canvas role and shape rules apply to it unchanged. */
+.legend__swatch.legend__swatch {
+  flex: none;
+  width: 22px;
+  height: 14px;
+  padding: 0;
+  outline-offset: 2px;
+}
+
+.legend__swatch.lg-node--effect {
+  width: 16px;
+  height: 10px;
+  margin: 0 3px;
+}
+
+/* Problems */
+.problems {
+  display: grid;
+  gap: 2px;
+  margin: 0 -12px;
+  padding: 0;
+  list-style: none;
+}
+
+.problem {
+  --severity: var(--info);
+}
+
+.problem[data-severity='error'] {
+  --severity: var(--error);
+}
+
+.problem[data-severity='warning'] {
+  --severity: var(--warning);
+}
+
+.problem__head {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.problem__head:hover,
+.problem__head[aria-expanded='true'] {
+  background: var(--hover);
+}
+
+.problem__mark {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--severity);
+}
+
+.problem__title {
+  display: block;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.problem__rule {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.problem__body {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 4px 12px 12px 30px;
+}
+
+.problem__fix {
+  font-weight: 600;
+}
+
+.problem__nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.ignore-form,
+.ignore-form label {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+
+.ignore-form__actions {
+  display: flex;
+  gap: 4px;
+}
+
+.ignored summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ignored .rows {
+  margin-top: 10px;
+}

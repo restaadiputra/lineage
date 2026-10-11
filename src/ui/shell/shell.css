@@ -1,0 +1,189 @@
+.shell {
+  display: grid;
+  /* top bar, banner (usually absent), panels, status bar */
+  grid-template-rows: var(--bar-height) auto minmax(0, 1fr) 26px;
+  height: 100%;
+}
+
+/* Top bar */
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.top-bar__brand {
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.top-bar__flow {
+  margin-left: 10px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-bar__spacer {
+  flex: 1;
+}
+
+/* Panels: full-bleed, separated by hairlines */
+.panels {
+  display: flex;
+  grid-row: 3;
+  min-height: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  min-width: 0;
+  background: var(--surface);
+}
+
+.panel--canvas {
+  flex: 1;
+  background: var(--canvas);
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--hairline);
+  font-weight: 500;
+}
+
+.panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Resize handle: a hairline with a wider invisible hit area */
+.resize-handle {
+  position: relative;
+  flex: none;
+  width: 1px;
+  background: var(--hairline);
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 5;
+}
+
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+}
+
+.resize-handle:hover,
+.resize-handle[data-dragging='true'],
+.resize-handle:focus-visible {
+  background: var(--source);
+  outline: 1px solid var(--source);
+}
+
+/* Status bar */
+.status-bar {
+  display: flex;
+  grid-row: 4;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--hairline);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.status-bar__state {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.status-bar [data-severity='error'] {
+  color: var(--error);
+}
+
+.status-bar [data-severity='warning'] {
+  color: var(--warning);
+}
+
+.status-bar [data-severity='info'] {
+  color: var(--info);
+}
+
+/* Items are separated by a middle dot, written in CSS so it is not read aloud. */
+.status-bar > span + span:not(.status-bar__notice)::before {
+  content: '·';
+  margin-right: 6px;
+  color: var(--muted);
+}
+
+.status-bar__notice {
+  margin-left: auto;
+  color: var(--ink);
+}
+
+/* Top bar additions */
+.top-bar__file,
+.top-bar__unsaved {
+  margin-left: 8px;
+}
+
+.top-bar__file {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.top-bar__unsaved {
+  color: var(--warning);
+}
+
+.top-bar__rule {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 6px;
+  background: var(--hairline);
+}
+
+.top-bar__search {
+  color: var(--muted);
+}
+
+kbd {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+/* Banner: file changed on disk */
+.banner {
+  display: flex;
+  grid-row: 2;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* Dragging a file over the window */
+.shell[data-dropping] {
+  outline: 2px dashed var(--source);
+  outline-offset: -6px;
+}

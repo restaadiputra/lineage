@@ -1,0 +1,9 @@
+.editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.editor__errors {
+  color: var(--error);
+  font-weight: 400;
+}

@@ -1,0 +1,86 @@
+/*
+ * Design tokens. Color is reserved for meaning (data routes and problems);
+ * the chrome is built from canvas / surface / ink / muted / hairline only.
+ *
+ * Dark values are listed twice on purpose: once for an explicit choice
+ * ([data-theme='dark']) and once for "system" when the OS prefers dark.
+ */
+:root {
+  color-scheme: light;
+
+  --canvas: #f3f5f4;
+  --surface: #ffffff;
+  --ink: #17201c;
+  --muted: #66706b;
+  --hairline: #dce1de;
+
+  --source: #2f55d4;
+  --reader: #0f8a6c;
+  --writer: #d9480f;
+  --rerender: #7c3aed;
+
+  --error: #c8323f;
+  --warning: #b7791f;
+  --info: #4f6b8a;
+
+  --font-ui: 'Instrument Sans Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-lg: 18px;
+
+  /* Quiet interaction states, derived so they follow the theme. */
+  --hover: color-mix(in srgb, var(--ink) 6%, transparent);
+  --pressed: color-mix(in srgb, var(--ink) 10%, transparent);
+
+  --bar-height: 40px;
+  --fade: 160ms;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --canvas: #121614;
+  --surface: #1a1f1d;
+  --ink: #e4e9e6;
+  --muted: #8e9893;
+  --hairline: #2a322e;
+
+  --source: #7c97ff;
+  --reader: #3cc8a0;
+  --writer: #ff8a4c;
+  --rerender: #a98bff;
+
+  --error: #f26b76;
+  --warning: #e0a84a;
+  --info: #8fa8c8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --canvas: #121614;
+    --surface: #1a1f1d;
+    --ink: #e4e9e6;
+    --muted: #8e9893;
+    --hairline: #2a322e;
+
+    --source: #7c97ff;
+    --reader: #3cc8a0;
+    --writer: #ff8a4c;
+    --rerender: #a98bff;
+
+    --error: #f26b76;
+    --warning: #e0a84a;
+    --info: #8fa8c8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --fade: 0ms;
+  }
+}

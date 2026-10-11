@@ -27,7 +27,8 @@ export function Inspector() {
             aria-controls="inspector-panel"
             onClick={() => setTab(id)}
           >
-            {LABEL[id]}
+            {/* The trailing space keeps the accessible name "Problems 11", not "Problems11". */}
+            {LABEL[id]}{' '}
             {id === 'problems' && problemCount > 0 && <span className="inspector__count">{problemCount}</span>}
           </button>
         ))}

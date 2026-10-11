@@ -24,6 +24,9 @@ export function useShortcuts({ onSearch }: { onSearch(): void }): void {
         // In the editor, dialogs and menus Esc already has a job (close search, tooltips, the menu).
         if (event.target instanceof Element && event.target.closest('.cm-editor, dialog, [role="menu"]')) return
         store.getState().select(null)
+        // React Flow treats Escape on a focused node as a selection key: once the
+        // node is deselected it would select it again. This key is ours.
+        event.stopPropagation()
         return
       }
       const command = (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && commands[event.key.toLowerCase()]

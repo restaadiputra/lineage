@@ -15,7 +15,8 @@ export function Section({ title, count, swatch, children }: SectionProps) {
     <section className="inspector__section" data-empty={count === 0 || undefined}>
       <h3 className="inspector__label">
         {swatch && <span className="lg-node legend__swatch" {...swatch} />}
-        <span>{title}</span>
+        {/* The trailing space keeps the accessible name "Reads it 3", not "Reads it3". */}
+        <span>{title}</span>{' '}
         {count !== undefined && <span className="inspector__count">{count}</span>}
       </h3>
       {children}

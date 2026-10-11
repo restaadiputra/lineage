@@ -9,7 +9,14 @@ import { editorTheme } from './editor-theme'
 import { highlightedLine, setHighlightedLine } from './line-highlight'
 import { toLintDiagnostics } from './to-lint-diagnostics'
 
-const extensions = [yamlLanguage(), lintGutter(), highlightedLine, editorTheme]
+const extensions = [
+  yamlLanguage(),
+  lintGutter(),
+  highlightedLine,
+  editorTheme,
+  // The label must sit on the editable element itself for screen readers to announce it.
+  EditorView.contentAttributes.of({ 'aria-label': 'Flow YAML' }),
+]
 const setup = { autocompletion: false, highlightSelectionMatches: false }
 
 /** Pushes parser diagnostics into the editor as lint marks. */
@@ -64,7 +71,6 @@ export function YamlEditor() {
         basicSetup={setup}
         theme="none"
         height="100%"
-        aria-label="Flow YAML"
       />
     </>
   )

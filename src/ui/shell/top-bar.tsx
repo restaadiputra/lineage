@@ -24,6 +24,7 @@ export function TopBar({ onSearch }: { onSearch(): void }) {
   const editorOpen = useFlow((s) => s.settings.editorOpen)
   const updateSettings = useFlow((s) => s.updateSettings)
   const nextTheme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]
+  const themeLabel = theme[0].toUpperCase() + theme.slice(1)
 
   return (
     <header className="top-bar">
@@ -57,12 +58,12 @@ export function TopBar({ onSearch }: { onSearch(): void }) {
       <button
         type="button"
         className="btn"
-        title={`Theme: ${theme}. Switch to ${nextTheme}`}
+        aria-label={`Theme: ${themeLabel}`}
+        title={`Switch to ${nextTheme} theme`}
         onClick={() => updateSettings({ theme: nextTheme })}
       >
         <ThemeIcon />
-        <span className="visually-hidden">Theme: </span>
-        {theme[0].toUpperCase() + theme.slice(1)}
+        {themeLabel}
       </button>
     </header>
   )

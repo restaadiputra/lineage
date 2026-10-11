@@ -61,7 +61,7 @@ export interface FlowState {
   /** Tell the canvas to read its saved positions again. */
   reloadPositions(): void
   /** Compare the flow with the YAML of a second flow file. Reports and does nothing if that file has errors. */
-  compareWith(fileName: string, yamlText: string): void
+  compareWith(fileName: string, yamlText: string, notes?: string[]): void
   stopComparing(): void
   setInspectorTab(tab: InspectorTab): void
   /** Open a dialog. Connect needs a selected node and says so when there is none. */
@@ -107,7 +107,7 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
       const nextValid = valid ?? get().valid
       // The plan changed, so the comparison with the same code has to be redone.
       const previous = get().comparison
-      const comparison = previous && nextValid ? buildComparison(nextValid.flow, previous.code, previous.fileName) : null
+      const comparison = previous && nextValid ? buildComparison(nextValid.flow, previous.code, previous.fileName, previous.notes) : null
       set({ diagnostics, valid: nextValid, comparison, selection: keepSelection(get().selection, nextValid, comparison) })
     }
 
@@ -157,7 +157,7 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
       },
 
       reloadPositions: () => set({ positionsRevision: get().positionsRevision + 1 }),
-      compareWith(fileName, yamlText) {
+      compareWith(fileName, yamlText, notes) {
         const plan = get().valid?.flow
         if (!plan) return
         const { valid: code, diagnostics } = analyze(yamlText)
@@ -166,7 +166,7 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
           get().notify(`Could not compare with ${fileName}: ${first}`)
           return
         }
-        set({ comparison: buildComparison(plan, code.flow, fileName), inspectorTab: 'compare' })
+        set({ comparison: buildComparison(plan, code.flow, fileName, notes), inspectorTab: 'compare' })
       },
 
       stopComparing() {

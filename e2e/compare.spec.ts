@@ -27,7 +27,7 @@ test.beforeEach(async ({ page }) => {
 async function compareWithCode(app: App) {
   const chooser = app.page.waitForEvent('filechooser')
   await app.topBar.getByRole('button', { name: 'Orders dashboard' }).click()
-  await app.page.getByRole('menuitem', { name: 'Compare with code…' }).click()
+  await app.page.getByRole('menuitem', { name: 'Compare with a flow file…' }).click()
   await (await chooser).setFiles({
     name: 'orders.code.flow.yaml',
     mimeType: 'application/yaml',

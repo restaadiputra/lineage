@@ -75,7 +75,7 @@ function DiffLegend() {
 
 /** The Compare tab: every difference between the plan and the code, by kind of difference. */
 export function Compare({ comparison }: { comparison: Comparison }) {
-  const { diff, fileName } = comparison
+  const { diff, fileName, notes } = comparison
   const all: [kind: string, item: ItemDiff][] = [
     ...diff.nodes.map((item): [string, ItemDiff] => ['node', item]),
     ...diff.edges.map((item): [string, ItemDiff] => ['edge', item]),
@@ -104,6 +104,18 @@ export function Compare({ comparison }: { comparison: Comparison }) {
           </Section>
         )
       })}
+      {notes.length > 0 && (
+        <Section title="Not read from the code" count={notes.length}>
+          <p className="inspector__muted diff__hint">
+            The reader works from the source text without AI. Differences that involve these may not be real.
+          </p>
+          <ul className="diff__changes">
+            {notes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </Section>
+      )}
       <DiffLegend />
     </>
   )

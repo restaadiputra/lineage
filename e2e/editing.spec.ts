@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { expect, SAMPLE_NODES, test, type App } from './fixtures'
 
 const addDialog = (app: App) => app.page.getByRole('dialog', { name: 'Add a node' })
@@ -6,7 +7,7 @@ const transformOf = (app: App, id: string) => app.node(id).evaluate((element) =>
 
 test('builds a flow from nothing with the keyboard, and writes clean YAML', async ({ app }) => {
   await app.topBar.getByRole('button', { name: 'Orders dashboard' }).click()
-  await app.page.getByRole('menuitem', { name: 'New flow' }).click()
+  await app.page.getByRole('menuitem', { name: 'New flow', exact: true }).click()
   await expect(app.page.getByText('This flow has no nodes yet.')).toBeVisible()
 
   // N opens the form with the id field ready; Enter adds.
@@ -136,17 +137,25 @@ test('a canvas edit can be undone in the editor', async ({ app }) => {
   expect(await app.storedYaml()).not.toContain('Toast')
 })
 
-test('editing is off while comparing', async ({ app }) => {
-  await app.page.addInitScript(() => Reflect.deleteProperty(window, 'showOpenFilePicker'))
-  await app.page.reload()
-  await app.ready()
+test.describe('while comparing', () => {
+  // The native open dialog cannot be driven, so use the upload path in every browser.
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => Reflect.deleteProperty(window, 'showOpenFilePicker'))
+  })
 
-  const chooser = app.page.waitForEvent('filechooser')
-  await app.topBar.getByRole('button', { name: 'Orders dashboard' }).click()
-  await app.page.getByRole('menuitem', { name: 'Compare with code…' }).click()
-  await (await chooser).setFiles('src/samples/orders.flow.yaml')
-  await expect(app.page.getByRole('region', { name: 'Comparison' })).toBeVisible()
+  test('editing is off', async ({ app }) => {
+    const chooser = app.page.waitForEvent('filechooser')
+    await app.topBar.getByRole('button', { name: 'Orders dashboard' }).click()
+    await app.page.getByRole('menuitem', { name: 'Compare with a flow file…' }).click()
+    // Uploaded from memory: WebKit's driver intermittently fails to read a file uploaded by path.
+    await (await chooser).setFiles({
+      name: 'orders.code.flow.yaml',
+      mimeType: 'application/yaml',
+      buffer: await readFile('src/samples/orders.flow.yaml'),
+    })
+    await expect(app.page.getByRole('region', { name: 'Comparison' })).toBeVisible()
 
-  await expect(app.page.getByRole('button', { name: 'Add node' })).toBeDisabled()
-  await expect(app.page.getByRole('button', { name: 'Connect' })).toBeDisabled()
+    await expect(app.page.getByRole('button', { name: 'Add node' })).toBeDisabled()
+    await expect(app.page.getByRole('button', { name: 'Connect' })).toBeDisabled()
+  })
 })

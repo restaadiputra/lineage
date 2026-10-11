@@ -1,5 +1,6 @@
 import { FLOW_FILE_TYPE as FLOW } from '../app/file-names'
 import type { FileGateway, FileRef, FileType, OpenedFile } from '../app/ports'
+import { isReadable, type SourceInput } from '../reader/source-files'
 
 /**
  * Files in the browser. Chrome and Edge have the File System Access API, which
@@ -48,6 +49,34 @@ function pickWithInput(type: FileType): Promise<File | null> {
     input.addEventListener('cancel', () => resolve(null))
     input.click()
   })
+}
+
+/** Larger than any hand-written source file; skips bundles that slipped past the path filter. */
+const MAX_SOURCE_BYTES = 1_000_000
+
+/**
+ * A folder picker that works in every browser: a hidden input with `webkitdirectory`.
+ * The browser hands over every file in the folder; only source files are read.
+ */
+function pickFolder(): Promise<File[] | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.webkitdirectory = true
+    input.addEventListener('change', () => resolve([...(input.files ?? [])]))
+    input.addEventListener('cancel', () => resolve(null))
+    input.click()
+  })
+}
+
+async function readFolder(picked: File[]): Promise<{ name: string; files: SourceInput[] }> {
+  // webkitRelativePath is "folder/src/App.tsx": the first segment is the folder that was picked.
+  const name = picked[0]?.webkitRelativePath.split('/')[0] ?? 'code'
+  const sources = picked
+    .map((file) => ({ file, path: file.webkitRelativePath.split('/').slice(1).join('/') }))
+    .filter(({ file, path }) => isReadable(path) && file.size <= MAX_SOURCE_BYTES)
+  const files = await Promise.all(sources.map(async ({ file, path }) => ({ path, text: await file.text() })))
+  return { name, files }
 }
 
 function download(name: string, text: string): void {
@@ -135,5 +164,10 @@ export function createBrowserFiles(): FileGateway {
     },
 
     download,
+
+    async openFolder() {
+      const picked = await pickFolder()
+      return picked && readFolder(picked)
+    },
   }
 }

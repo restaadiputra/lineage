@@ -123,7 +123,7 @@ test('a broken edit keeps the last valid diagram; a fixed one redraws and persis
 
 test('the flow menu starts a new flow and brings the sample back', async ({ app }) => {
   await app.topBar.getByRole('button', { name: 'Orders dashboard' }).click()
-  await app.page.getByRole('menuitem', { name: 'New flow' }).click()
+  await app.page.getByRole('menuitem', { name: 'New flow', exact: true }).click()
 
   await expect(app.nodes).toHaveCount(0)
   await expect(app.page.getByText('This flow has no nodes yet.')).toBeVisible()

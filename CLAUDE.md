@@ -53,11 +53,16 @@ src/app/                    Application layer (no React, no browser globals; all
   append-ignore.ts          Adds an entry to `ignore:` (uses yaml-list)
   layout-file.ts            `.flow.layout.json` format; layout-exchange.ts exports / imports it
   comparison.ts             Comparison = code flow + diff + merged graph; compare-session.ts picks the code file
+  code-session.ts           Reads a code folder through the CodeReader port: compare with it, or start from it
   search.ts, prompts.ts, settings.ts, position-repository.ts, describe-component.ts,
   new-flow.ts, file-names.ts
 src/canvas/                 Pure canvas model: view-edges, focus (impact → roles), diff-view (plan vs code),
                             layout (ELK), node-size, edge-geometry, badges, viewport
-src/adapters/               Browser implementations of the ports (localStorage, clipboard, files)
+src/reader/                 Code reader: React source → flow file, without AI (ts-morph; loaded lazily)
+  read-code.ts              readCode(files, name): collect → hooks → jsx → calls → emit
+  source-files.ts           Input / output types and isReadable(); safe to import without the compiler
+fixtures/orders-app/        The sample as real React code; input for the reader's tests. Not compiled or linted.
+src/adapters/               Browser implementations of the ports (localStorage, clipboard, files, lazy code reader)
 src/ui/                     React: shell/ (top bar, status bar, search, menus), editor/, canvas/, inspector/,
                             editing/ (Add node and Connect dialogs)
 src/main.tsx                Composition root: the only place that picks adapters
@@ -214,7 +219,15 @@ fade, pan to node).
   difference and pans to it. The impact view is off while comparing. `source` and `note` are never differences.
   Render links and effect deps/sets are compared as edges. The comparison is redone when the plan is edited;
   the code file is read once, not watched.
-- Built-in code reader with ts-morph (no AI) to cross-check AI output
+- ~~Built-in code reader with ts-morph (no AI) to cross-check AI output~~ Done: flow menu → Compare with a code
+  folder… (reads the folder, then runs the plan-vs-code comparison) and New flow from a code folder…. The reader
+  (`src/reader`) runs in the browser on an in-memory ts-morph project; nothing leaves the machine. It is loaded
+  on first use as its own ~7 MB chunk. It is static and name-based: it recognises components, useState /
+  useReducer / useRef, createContext + Provider, zustand `create`, useQuery / useSWR, effects, JSX children
+  and props, and traces props back to their data through renames, `props.x` and `.map()` callbacks. It records
+  what it skipped (custom hooks, spread props, unprovided contexts) as notes, shown in the Compare tab and as
+  comments at the top of the generated YAML. Not handled: custom hooks, Redux / Jotai / MobX, imports that
+  rename things, components with the same name in two files.
 - ~~Layout file export (`.flow.layout.json`) for sharing positions in the repo~~ Done: flow menu → Export layout… /
   Import layout…, or drop the file on the window. Format: `{ version: 1, flow, positions: { id: { x, y } } }`,
   ids sorted and coordinates rounded so it diffs cleanly. Import keeps positions of nodes the file does not name.

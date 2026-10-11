@@ -4,11 +4,13 @@ import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach } from 'vitest'
 import { createMemoryStorage } from '../adapters/memory-storage'
+import { createCodeSession } from '../app/code-session'
 import { createCompareSession } from '../app/compare-session'
 import { createFileSession } from '../app/file-session'
 import { createFlowStore } from '../app/flow-store'
 import { createLayoutExchange } from '../app/layout-exchange'
 import { createPositionRepository } from '../app/position-repository'
+import type { SourceInput } from '../reader/source-files'
 import sample from '../samples/orders.flow.yaml?raw'
 import { AppContext, type AppServices } from '../ui/app-context'
 import { fakeDisk } from './fake-disk'
@@ -47,13 +49,17 @@ export function renderApp(ui: ReactNode, { yaml, diskText = flowYaml('On disk') 
   const fake = fakeDisk(diskText)
   const copied: string[] = []
   const positions = createPositionRepository(storage)
+  const session = createFileSession({ store, files: fake.files })
+  // The real reader, loaded directly: tests run in Node, where its size does not matter.
+  const reader = { read: async (files: SourceInput[], name: string) => (await import('../reader/read-code')).readCode(files, name) }
   const services: AppServices = {
     store,
     positions,
     clipboard: { copy: async (text) => void copied.push(text) },
-    files: createFileSession({ store, files: fake.files }),
+    files: session,
     layout: createLayoutExchange({ store, positions, files: fake.files }),
     compare: createCompareSession({ store, files: fake.files }),
+    code: createCodeSession({ store, files: fake.files, reader, session }),
     formatDoc: FORMAT_DOC,
     sampleYaml: sample,
   }

@@ -1,4 +1,5 @@
 import type { FileGateway, FileRef, TextFile } from '../app/ports'
+import type { SourceInput } from '../reader/source-files'
 
 /** A one-file disk that tests can edit behind the app's back. */
 export function fakeDisk(text: string, name = 'orders.flow.yaml') {
@@ -12,6 +13,8 @@ export function fakeDisk(text: string, name = 'orders.flow.yaml') {
     other: null as TextFile | null,
     /** everything saved through saveText() */
     savedTexts: [] as TextFile[],
+    /** what openFolder() hands back */
+    folder: null as { name: string; files: SourceInput[] } | null,
   }
   const opened = () => ({ ref, text: disk.text, lastModified: disk.lastModified })
 
@@ -27,6 +30,7 @@ export function fakeDisk(text: string, name = 'orders.flow.yaml') {
     },
     download: (downloadName) => void disk.downloads.push(downloadName),
     openText: async () => (disk.cancelled ? null : disk.other),
+    openFolder: async () => (disk.cancelled ? null : disk.folder),
     async saveText(file) {
       if (disk.cancelled) return false
       disk.savedTexts.push(file)

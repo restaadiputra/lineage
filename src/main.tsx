@@ -5,8 +5,10 @@ import formatDoc from '../docs/FORMAT.md?raw'
 import { createRoot } from 'react-dom/client'
 import { createBrowserClipboard } from './adapters/browser-clipboard'
 import { createBrowserFiles } from './adapters/browser-files'
+import { createLazyCodeReader } from './adapters/lazy-code-reader'
 import { createLocalStorage } from './adapters/local-storage'
 import App from './App.tsx'
+import { createCodeSession } from './app/code-session'
 import { createCompareSession } from './app/compare-session'
 import { isLayoutFileName } from './app/file-names'
 import { createFileSession } from './app/file-session'
@@ -32,13 +34,16 @@ const claimDrop = ({ ref, text }: { ref: { name: string }; text: string }) => {
   return true
 }
 
+const session = createFileSession({ store, files: browserFiles, claimDrop })
+
 const services: AppServices = {
   store,
   positions,
   clipboard: createBrowserClipboard(),
-  files: createFileSession({ store, files: browserFiles, claimDrop }),
+  files: session,
   layout,
   compare: createCompareSession({ store, files: browserFiles }),
+  code: createCodeSession({ store, files: browserFiles, reader: createLazyCodeReader(), session }),
   formatDoc,
   sampleYaml,
 }

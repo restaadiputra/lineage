@@ -15,7 +15,7 @@ const renderComparing = () =>
 async function startComparison(app: ReturnType<typeof renderComparing>) {
   app.disk.other = { name: 'cart.code.flow.yaml', text: CODE_YAML }
   await app.user.click(screen.getByRole('button', { name: 'Cart plan' }))
-  await app.user.click(screen.getByRole('menuitem', { name: 'Compare with code…' }))
+  await app.user.click(screen.getByRole('menuitem', { name: 'Compare with a flow file…' }))
   await screen.findByRole('tab', { name: 'Compare' })
 }
 
@@ -108,7 +108,7 @@ describe('comparing plan and code', () => {
     const app = renderComparing()
     app.disk.other = { name: 'same.flow.yaml', text: PLAN_YAML }
     await app.user.click(screen.getByRole('button', { name: 'Cart plan' }))
-    await app.user.click(screen.getByRole('menuitem', { name: 'Compare with code…' }))
+    await app.user.click(screen.getByRole('menuitem', { name: 'Compare with a flow file…' }))
 
     expect(await screen.findByText('They describe the same flow.')).toBeInTheDocument()
     expect(within(screen.getByRole('region', { name: 'Comparison' })).getByText(/No differences\./)).toBeInTheDocument()
@@ -118,7 +118,7 @@ describe('comparing plan and code', () => {
     const app = renderComparing()
     app.disk.other = { name: 'broken.flow.yaml', text: 'nodes: [' }
     await app.user.click(screen.getByRole('button', { name: 'Cart plan' }))
-    await app.user.click(screen.getByRole('menuitem', { name: 'Compare with code…' }))
+    await app.user.click(screen.getByRole('menuitem', { name: 'Compare with a flow file…' }))
 
     await waitFor(() => expect(app.store.getState().notice).toMatch(/Could not compare with broken\.flow\.yaml/))
     expect(screen.queryByRole('tab', { name: 'Compare' })).not.toBeInTheDocument()

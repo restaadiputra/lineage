@@ -1,3 +1,5 @@
+import type { ReadResult, SourceInput } from '../reader/source-files'
+
 /**
  * Ports: the small interfaces the application layer depends on.
  * Concrete implementations live in src/adapters and are chosen in main.tsx.
@@ -59,4 +61,11 @@ export interface FileGateway {
   openText(type: FileType): Promise<TextFile | null>
   /** Ask where to save, or download. False when the user cancels. */
   saveText(file: TextFile, type: FileType): Promise<boolean>
+  /** Ask for a folder of source code and read its text files. Null when cancelled. */
+  openFolder(): Promise<{ name: string; files: SourceInput[] } | null>
+}
+
+/** Reads React source into a flow file, without AI. */
+export interface CodeReader {
+  read(files: SourceInput[], flowName: string): Promise<ReadResult>
 }

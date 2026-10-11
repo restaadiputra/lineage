@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import type { HostProblem, ToHost, ToWebview } from '../../src/vscode/protocol'
 import { runRequest } from './host-requests'
-import { assetsFromManifest, layoutFileFor, minimalReplacement, parseSource, webviewHtml } from './pure'
+import { assetsFromManifest, isWithin, layoutFileFor, minimalReplacement, parseSource, webviewHtml } from './pure'
 
 export const VIEW_TYPE = 'lineage.flow'
 const STORAGE_KEY = 'lineage.storage'
@@ -143,8 +143,12 @@ export class FlowEditorProvider implements vscode.CustomTextEditorProvider {
   private async openSource(document: vscode.TextDocument, source: string): Promise<void> {
     const { path, line } = parseSource(source)
     const roots = [vscode.workspace.getWorkspaceFolder(document.uri)?.uri, folderOf(document.uri)].filter((root) => root !== undefined)
+    // The workspace, or the flow file's folder when it is opened on its own.
+    const boundary = roots[0]
     for (const root of roots) {
+      // joinPath resolves "..", so a path that climbs out of the boundary is caught here.
       const target = vscode.Uri.joinPath(root, path)
+      if (!isWithin(boundary.path, target.path)) continue
       if ((await readIfExists(target)) === null) continue
       const position = new vscode.Position(Math.max((line ?? 1) - 1, 0), 0)
       await vscode.window.showTextDocument(target, { selection: new vscode.Range(position, position), viewColumn: vscode.ViewColumn.Beside })

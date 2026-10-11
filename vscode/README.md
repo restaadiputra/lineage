@@ -10,7 +10,8 @@ React rules. It is the same app as the web version, hosted in a webview, with th
 - The diagram and the text are the same document. Typing in the text editor, an edit by Copilot, or a `git pull`
   redraws the diagram; adding a node or a connection on the canvas edits the text. Save and undo are VS Code's.
 - Rule problems appear in the **Problems** panel, on the line of the node they are about.
-- **Open** next to a node's `source` in the inspector jumps to that file and line.
+- **Open** next to a node's `source` in the inspector jumps to that file and line. Only files inside the
+  workspace are opened.
 - A `name.flow.layout.json` next to the flow file is applied when the diagram opens (once per version of that
   file). Node positions you change are remembered per workspace; use the flow menu → **Export layout…** to write
   them back to the file for your team.

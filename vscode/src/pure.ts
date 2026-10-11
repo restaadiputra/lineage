@@ -75,6 +75,15 @@ export function parseSource(source: string): SourceLocation {
   return match ? { path: match[1], line: Number(match[2]) } : { path: source.trim() }
 }
 
+/**
+ * True when `path` is inside `folder` (both URI paths, already normalised). A
+ * flow file can come from someone else's repository, so a `source` such as
+ * "../../.ssh/config" must not open files outside the workspace.
+ */
+export function isWithin(folder: string, path: string): boolean {
+  return path.startsWith(folder.endsWith('/') ? folder : `${folder}/`)
+}
+
 export interface Replacement {
   /** offsets into the old text */
   start: number

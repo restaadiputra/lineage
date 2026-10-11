@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assetsFromManifest, layoutFileFor, minimalReplacement, parseSource, webviewHtml } from './pure'
+import { assetsFromManifest, isWithin, layoutFileFor, minimalReplacement, parseSource, webviewHtml } from './pure'
 
 describe('assetsFromManifest', () => {
   it('finds the entry script and its stylesheets', () => {
@@ -45,6 +45,19 @@ describe('parseSource', () => {
     expect(parseSource('src/App.tsx')).toEqual({ path: 'src/App.tsx' })
     expect(parseSource('C:\\code\\App.tsx')).toEqual({ path: 'C:\\code\\App.tsx' })
     expect(parseSource('C:\\code\\App.tsx:9')).toEqual({ path: 'C:\\code\\App.tsx', line: 9 })
+  })
+})
+
+describe('isWithin', () => {
+  it('accepts files in the folder and below it', () => {
+    expect(isWithin('/work/app', '/work/app/src/App.tsx')).toBe(true)
+    expect(isWithin('/work/app/', '/work/app/App.tsx')).toBe(true)
+  })
+
+  it('refuses files outside the folder, including a sibling whose name starts the same', () => {
+    expect(isWithin('/work/app', '/work/.ssh/config')).toBe(false)
+    expect(isWithin('/work/app', '/work/app-secrets/keys.ts')).toBe(false)
+    expect(isWithin('/work/app', '/work/app')).toBe(false)
   })
 })
 

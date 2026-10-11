@@ -15,4 +15,5 @@ npm test
 npm run dev
 ```
 
-Status and plan: [CLAUDE.md](CLAUDE.md).
+What is built and what could come next: [docs/ROADMAP.md](docs/ROADMAP.md).
+Architecture and conventions: [CLAUDE.md](CLAUDE.md). VS Code extension: [vscode/README.md](vscode/README.md).

@@ -32,6 +32,7 @@ npm run lint       # oxlint
 
 ```
 docs/FORMAT.md              Format spec written for the AI. Keep in sync with schema.ts.
+docs/ROADMAP.md             What is built, what was left out, and notes for picking each item up
 src/model/schema.ts         zod schema for the flow file (source of truth for the format)
 src/model/parse.ts          YAML → FlowFile, diagnostics with line numbers, semantic validation, nodeLines
 src/model/graph.ts          Graph indexes (children, parents, props, edges, owners), LCA helpers, edgeKey()
@@ -91,8 +92,9 @@ Key semantics:
 
 ## Status
 
-Done: engine (format, parser, graph, impact, 13 rules) and the version 1 UI
-described below, steps 1 to 11.
+Done: engine (format, parser, graph, impact, 13 rules), the version 1 UI
+described below (steps 1 to 11), and the five roadmap features. Implementation
+is paused as of 2026-10-11; open items are listed in `docs/ROADMAP.md`.
 
 Tests:
 - `src/**/*.test.ts`: engine, application layer and pure canvas model (node).
@@ -212,21 +214,22 @@ Quality floor: visible keyboard focus, `prefers-reduced-motion` respected, works
 at 1280px wide, contrast AA. Motion only in response to actions (selection
 fade, pan to node).
 
-## Roadmap after v1
-- ~~Canvas editing (keyboard-first add node / connect), writing back to YAML~~ Done for adding:
+## Features built after v1 (how each one works)
+
+- Canvas editing (keyboard-first add node / connect), writing back to YAML (adding only):
   N (or the toolbar) opens Add node: kind, id, owner / type / parent as the kind needs. C connects the selected
   node: pick the other node, then one of the relations valid for that pair (renders, prop, reads, writes,
   derives, effect deps / sets). Edits are spliced into the YAML text in the style around them, never by
   re-serialising the file; an edit that would make the flow invalid is refused. Ctrl+Z in the editor undoes.
   Not done: deleting, renaming, editing fields of an existing node or edge, drag-to-connect. Those are still
   YAML-only.
-- ~~Plan vs code comparison (diff two flow files)~~ Done: flow menu → Compare with code… opens a second flow
+- Plan vs code comparison (diff two flow files): flow menu → Compare with a flow file… opens a second flow
   file. The open flow is "the plan", the second file "the code". Both are drawn as one merged diagram: nodes and
   edges are tagged plan only (blue, dashed), code only (green) or changed (amber); a Compare tab lists every
   difference and pans to it. The impact view is off while comparing. `source` and `note` are never differences.
   Render links and effect deps/sets are compared as edges. The comparison is redone when the plan is edited;
   the code file is read once, not watched.
-- ~~Built-in code reader with ts-morph (no AI) to cross-check AI output~~ Done: flow menu → Compare with a code
+- Built-in code reader with ts-morph (no AI) to cross-check AI output: flow menu → Compare with a code
   folder… (reads the folder, then runs the plan-vs-code comparison) and New flow from a code folder…. The reader
   (`src/reader`) runs in the browser on an in-memory ts-morph project; nothing leaves the machine. It is loaded
   on first use as its own ~7 MB chunk. It is static and name-based: it recognises components, useState /
@@ -235,13 +238,19 @@ fade, pan to node).
   what it skipped (custom hooks, spread props, unprovided contexts) as notes, shown in the Compare tab and as
   comments at the top of the generated YAML. Not handled: custom hooks, Redux / Jotai / MobX, imports that
   rename things, components with the same name in two files.
-- ~~Layout file export (`.flow.layout.json`) for sharing positions in the repo~~ Done: flow menu → Export layout… /
+- Layout file export (`.flow.layout.json`) for sharing positions in the repo: flow menu → Export layout… /
   Import layout…, or drop the file on the window. Format: `{ version: 1, flow, positions: { id: { x, y } } }`,
   ids sorted and coordinates rounded so it diffs cleanly. Import keeps positions of nodes the file does not name.
   The browser cannot read the file next to an opened flow by itself, so loading it is a manual step.
-- ~~VS Code extension wrapper~~ Done: `vscode/` is an extension with a custom editor for `*.flow.yaml`. It hosts
+- VS Code extension wrapper: `vscode/` is an extension with a custom editor for `*.flow.yaml`. It hosts
   the same app in a webview (`src/vscode/webview-main.tsx`), synced both ways with the VS Code text document, so
   edits by Copilot or the text editor redraw the diagram and canvas edits change the text. Rule problems go to
   the Problems panel; "Open" on a node's `source` jumps to the code; a sibling `.flow.layout.json` is applied on
   open. See `vscode/README.md`. Not done: publishing to the marketplace (publisher id is a placeholder), an
   icon, and writing moved positions back to the layout file automatically (Export layout… does it by hand).
+
+## Paused
+
+Implementation is paused as of 2026-10-11. What was left out of each feature, and what could come next, is in
+[docs/ROADMAP.md](docs/ROADMAP.md), with notes on where each item would start. Read it before starting new work,
+and update it when something there gets built.

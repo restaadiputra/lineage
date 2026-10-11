@@ -2,12 +2,6 @@
  * Canvas: nodes, edges and the focus (impact) view.
  * Shape encodes node kind; color appears only for roles and problems.
  */
-:root {
-  /* Idle lines sit between hairline and muted: visible, but quieter than text. */
-  --node-border: color-mix(in srgb, var(--muted) 55%, var(--hairline));
-  --edge-idle: color-mix(in srgb, var(--muted) 50%, var(--hairline));
-}
-
 .canvas {
   position: relative;
   flex: 1;
@@ -54,7 +48,7 @@
   height: 100%;
   padding: 0 10.5px;
   background: var(--surface);
-  border: 1.5px solid var(--role, var(--node-border));
+  border: 1.5px solid var(--role, var(--line));
   border-radius: 6px;
   transition:
     opacity var(--fade),
@@ -292,13 +286,13 @@
 
 .lg-edge__line {
   fill: none;
-  stroke: var(--role, var(--edge-idle));
+  stroke: var(--role, var(--line));
   stroke-width: 1.25;
   transition: stroke var(--fade);
 }
 
 .lg-edge__arrow {
-  fill: var(--role, var(--edge-idle));
+  fill: var(--role, var(--line));
   stroke: none;
   transition: fill var(--fade);
 }
@@ -342,10 +336,19 @@
   border: 1px solid var(--hairline);
   border-radius: 4px;
   background: var(--surface);
-  color: var(--role, var(--ink));
+  color: var(--role-text, var(--role, var(--ink)));
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   line-height: 18px;
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* Label text uses the darker text variants where the line color is too light to read. */
+.lg-edge-label[data-role='reader'] {
+  --role-text: var(--reader-text);
+}
+
+.lg-edge-label[data-role='writer'] {
+  --role-text: var(--writer-text);
 }

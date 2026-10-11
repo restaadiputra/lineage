@@ -22,10 +22,11 @@
 }
 
 .top-bar__flow {
-  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-left: 4px;
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -119,7 +120,7 @@
 }
 
 .status-bar [data-severity='warning'] {
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .status-bar [data-severity='info'] {
@@ -150,7 +151,7 @@
 }
 
 .top-bar__unsaved {
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .top-bar__rule {

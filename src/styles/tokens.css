@@ -13,6 +13,8 @@
   --ink: #17201c;
   --muted: #66706b;
   --hairline: #dce1de;
+  /* Idle node borders and edges: the lightest grey that still has 3:1 on the canvas. */
+  --line: #848c88;
 
   --source: #2f55d4;
   --reader: #0f8a6c;
@@ -22,6 +24,14 @@
   --error: #c8323f;
   --warning: #b7791f;
   --info: #4f6b8a;
+
+  /*
+   * These three are fine for lines and borders (3:1) but too light for small
+   * text on white (AA needs 4.5:1), so text uses a darker variant.
+   */
+  --reader-text: #0b7259;
+  --writer-text: #b83c0b;
+  --warning-text: #8a5a12;
 
   --font-ui: 'Instrument Sans Variable', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
@@ -47,6 +57,7 @@
   --ink: #e4e9e6;
   --muted: #8e9893;
   --hairline: #2a322e;
+  --line: #757f7a;
 
   --source: #7c97ff;
   --reader: #3cc8a0;
@@ -56,6 +67,10 @@
   --error: #f26b76;
   --warning: #e0a84a;
   --info: #8fa8c8;
+
+  --reader-text: var(--reader);
+  --writer-text: var(--writer);
+  --warning-text: var(--warning);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -67,6 +82,7 @@
     --ink: #e4e9e6;
     --muted: #8e9893;
     --hairline: #2a322e;
+    --line: #757f7a;
 
     --source: #7c97ff;
     --reader: #3cc8a0;
@@ -76,6 +92,10 @@
     --error: #f26b76;
     --warning: #e0a84a;
     --info: #8fa8c8;
+
+    --reader-text: var(--reader);
+    --writer-text: var(--writer);
+    --warning-text: var(--warning);
   }
 }
 

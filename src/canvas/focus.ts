@@ -76,10 +76,12 @@ function cascadeEffects(g: Graph, impact: Impact): EffectNode[] {
 
 function impactEdges(b: FocusBuilder, viewEdges: ViewEdge[], impact: Impact, chain: Set<string>) {
   const onRoute = (key: string) => impact.edges.has(key)
+  const onCascade = (key: string) => impact.cascadeEdges.has(key)
   for (const edge of viewEdges) {
     const { kind, source, target } = edge
     if (kind === 'tree') {
       if (edge.keys.some(onRoute)) b.edge(edge, 'carrier', propLabel(edge, onRoute))
+      else if (edge.keys.some(onCascade)) b.edge(edge, 'cascade', propLabel(edge, onCascade))
       else if (impact.rerenders.has(source) && impact.rerenders.has(target)) b.edge(edge, 'rerender')
     } else if (kind === 'ownership') {
       if (target === impact.source || impact.cascade.has(target) || chain.has(target)) b.edge(edge, 'related')
@@ -87,7 +89,7 @@ function impactEdges(b: FocusBuilder, viewEdges: ViewEdge[], impact: Impact, cha
       b.edge(edge, DIRECT_ROLE[kind])
     } else if (kind === 'writes' && target === impact.source && impact.writers.has(source)) {
       b.edge(edge, 'writer') // an effect that sets the selected data
-    } else if (chain.has(source) || chain.has(target)) {
+    } else if (chain.has(source) || chain.has(target) || edge.keys.some(onCascade)) {
       b.edge(edge, 'cascade')
     }
   }

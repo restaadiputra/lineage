@@ -113,6 +113,20 @@ describe('impact', () => {
     expect(i.rerenders.get('OrderSummary')).toBe('parent OrdersPage re-rendered')
   })
 
+  it('records the edges that carry cascaded data, apart from the direct route', () => {
+    const i = computeImpact(g, ['orders'])
+    expect([...i.cascadeEdges]).toEqual(['prop:OrdersPage>OrderSummary:total'])
+    expect(i.edges.has('prop:OrdersPage>OrderSummary:total')).toBe(false)
+
+    // From the query, the whole orders route is a consequence of the copy into state.
+    const fromQuery = computeImpact(g, ['ordersQuery'])
+    expect(fromQuery.cascadeEdges.has('prop:Sidebar>OrderList:orders')).toBe(true)
+    expect(fromQuery.cascadeEdges.has('prop:OrdersPage>OrderSummary:total')).toBe(true)
+    // Its own reader is on the direct route, not the cascade.
+    expect(fromQuery.edges.has('reads:ordersQuery>OrdersPage')).toBe(true)
+    expect(fromQuery.cascadeEdges.has('reads:ordersQuery>OrdersPage')).toBe(false)
+  })
+
   it('narrows to a field', () => {
     const i = computeImpact(g, parsePath('orders[].status'))
     // QtyStepper only receives orders[].items[], a sibling of status

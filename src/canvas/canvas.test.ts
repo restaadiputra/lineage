@@ -83,6 +83,17 @@ describe('computeFocus', () => {
     expect(focus?.edges.has('reads:uiStore>Header')).toBe(false)
   })
 
+  it('follows the consequences: props carrying data that changed as a result', () => {
+    const focus = computeFocus(graph, viewEdges, { id: 'orders' })
+    // orders → total (derived) → OrderSummary receives it as a prop.
+    expect(focus?.edges.get('tree:OrdersPage>OrderSummary')).toEqual({ role: 'cascade', label: 'total' })
+
+    // ordersQuery → orders (copied into state) → the orders props, down to the list.
+    const fromQuery = computeFocus(graph, viewEdges, { id: 'ordersQuery' })
+    expect(fromQuery?.edges.get('tree:OrdersPage>Layout')).toEqual({ role: 'cascade', label: 'orders' })
+    expect(fromQuery?.edges.get('tree:OrderList>OrderRow')?.label).toBe('order')
+  })
+
   it('marks tree edges between re-rendering components', () => {
     const focus = computeFocus(graph, viewEdges, { id: 'orders' })
     expect(focus?.edges.get('tree:OrdersPage>CheckoutButton')?.role).toBe('rerender')

@@ -20,6 +20,8 @@ export interface Impact {
   skipped: Map<string, string>
   /** edge keys on the flow path, for highlighting */
   edges: Set<string>
+  /** edge keys that carry data changed as a consequence (a prop or read of cascaded data) */
+  cascadeEdges: Set<string>
 }
 
 const fullFields = (source: string, fields?: string[]): Path[] | null =>
@@ -43,6 +45,7 @@ export function computeImpact(g: Graph, path: Path): Impact {
     rerenders: new Map(),
     skipped: new Map(),
     edges: new Set(),
+    cascadeEdges: new Set(),
   }
 
   // 1. Readers, carriers, writers of the selected data
@@ -95,6 +98,16 @@ export function computeImpact(g: Graph, path: Path): Impact {
       queue.push(n.p)
       out.cascade.set(n.p[0], n.why)
       if (n.key) out.edges.add(n.key)
+    }
+  }
+
+  // Where the consequences travel: props and reads of the data that changed as a result.
+  for (const p of changed.slice(1)) {
+    for (const e of g.flow.edges) {
+      const carries =
+        (e.kind === 'prop' && !!e.data && overlaps(parsePath(e.data), p)) ||
+        (e.kind === 'reads' && e.from === p[0] && touches(fullFields(p[0], e.fields), p))
+      if (carries && !out.edges.has(edgeKey(e))) out.cascadeEdges.add(edgeKey(e))
     }
   }
 

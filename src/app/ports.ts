@@ -27,7 +27,20 @@ export interface OpenedFile {
   lastModified: number
 }
 
-/** Reading and writing flow files on the user's disk. */
+/** A kind of file, for pickers: what to call it and which extensions to offer. */
+export interface FileType {
+  description: string
+  mime: string
+  extensions: string[]
+}
+
+/** A file read or written once, with no link kept to it. */
+export interface TextFile {
+  name: string
+  text: string
+}
+
+/** Reading and writing files on the user's disk. */
 export interface FileGateway {
   /** Ask the user for a file. Null when they cancel. */
   open(): Promise<OpenedFile | null>
@@ -42,4 +55,8 @@ export interface FileGateway {
    */
   save(ref: FileRef | null, text: string, suggestedName: string): Promise<{ ref: FileRef; lastModified: number } | null>
   download(name: string, text: string): void
+  /** Ask for a file of another kind (a layout file) and read it once. Null when cancelled. */
+  openText(type: FileType): Promise<TextFile | null>
+  /** Ask where to save, or download. False when the user cancels. */
+  saveText(file: TextFile, type: FileType): Promise<boolean>
 }

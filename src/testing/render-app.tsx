@@ -6,6 +6,7 @@ import { afterEach } from 'vitest'
 import { createMemoryStorage } from '../adapters/memory-storage'
 import { createFileSession } from '../app/file-session'
 import { createFlowStore } from '../app/flow-store'
+import { createLayoutExchange } from '../app/layout-exchange'
 import { createPositionRepository } from '../app/position-repository'
 import sample from '../samples/orders.flow.yaml?raw'
 import { AppContext, type AppServices } from '../ui/app-context'
@@ -44,11 +45,13 @@ export function renderApp(ui: ReactNode, { yaml, diskText = flowYaml('On disk') 
   const store = createFlowStore({ storage, sampleYaml: sample, debounceMs: 0 })
   const fake = fakeDisk(diskText)
   const copied: string[] = []
+  const positions = createPositionRepository(storage)
   const services: AppServices = {
     store,
-    positions: createPositionRepository(storage),
+    positions,
     clipboard: { copy: async (text) => void copied.push(text) },
     files: createFileSession({ store, files: fake.files }),
+    layout: createLayoutExchange({ store, positions, files: fake.files }),
     formatDoc: FORMAT_DOC,
     sampleYaml: sample,
   }

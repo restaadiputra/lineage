@@ -126,6 +126,30 @@ describe('flow menu', () => {
     expect(store.getState().valid?.flow.name).toBe('Orders dashboard')
   })
 
+  it('exports the canvas layout to a file named after the flow', async () => {
+    const { user, disk, services } = renderShell()
+    services.positions.save('Orders dashboard', { App: { x: 12, y: 34 } })
+    await pick(user, 'Orders dashboard', 'Export layout…')
+
+    await waitFor(() => expect(disk.savedTexts).toHaveLength(1))
+    expect(disk.savedTexts[0].name).toBe('orders-dashboard.flow.layout.json')
+    expect(JSON.parse(disk.savedTexts[0].text).positions).toEqual({ App: { x: 12, y: 34 } })
+    expect(statusBar().getByText('Layout saved as orders-dashboard.flow.layout.json')).toBeInTheDocument()
+  })
+
+  it('imports a layout file and tells the canvas to re-read positions', async () => {
+    const { user, disk, services, store } = renderShell()
+    disk.other = {
+      name: 'team.flow.layout.json',
+      text: JSON.stringify({ version: 1, flow: 'Orders dashboard', positions: { App: { x: 400, y: 80 } } }),
+    }
+    await pick(user, 'Orders dashboard', 'Import layout…')
+
+    await waitFor(() => expect(services.positions.load('Orders dashboard').App).toEqual({ x: 400, y: 80 }))
+    expect(store.getState().positionsRevision).toBe(1)
+    expect(statusBar().getByText('Layout applied to 1 of 21 nodes')).toBeInTheDocument()
+  })
+
   it('lets go of the open file, so the next save cannot overwrite it', async () => {
     const { user, store } = renderShell()
     await user.click(screen.getByRole('button', { name: 'Open' }))

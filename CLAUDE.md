@@ -47,7 +47,9 @@ src/app/                    Application layer (no React, no browser globals; all
   analyze.ts                YAML text → diagnostics + graph + problems
   file-session.ts           Open / save / watch the file on disk (reload or "keep mine")
   append-ignore.ts          Adds an entry to `ignore:` without reformatting the file
-  search.ts, prompts.ts, settings.ts, position-repository.ts, describe-component.ts
+  layout-file.ts            `.flow.layout.json` format; layout-exchange.ts exports / imports it
+  search.ts, prompts.ts, settings.ts, position-repository.ts, describe-component.ts,
+  new-flow.ts, file-names.ts
 src/canvas/                 Pure canvas model: view-edges, focus (impact → roles), layout (ELK),
                             node-size, edge-geometry, badges
 src/adapters/               Browser implementations of the ports (localStorage, clipboard, files)
@@ -196,5 +198,8 @@ fade, pan to node).
 - Canvas editing (keyboard-first add node / connect), writing back to YAML
 - Plan vs code comparison (diff two flow files)
 - Built-in code reader with ts-morph (no AI) to cross-check AI output
-- Layout file export (`.flow.layout.json`) for sharing positions in the repo
+- ~~Layout file export (`.flow.layout.json`) for sharing positions in the repo~~ Done: flow menu → Export layout… /
+  Import layout…, or drop the file on the window. Format: `{ version: 1, flow, positions: { id: { x, y } } }`,
+  ids sorted and coordinates rounded so it diffs cleanly. Import keeps positions of nodes the file does not name.
+  The browser cannot read the file next to an opened flow by itself, so loading it is a manual step.
 - VS Code extension wrapper

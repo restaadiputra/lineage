@@ -1,4 +1,4 @@
-import type { FileGateway, FileRef, OpenedFile } from '../app/ports'
+import type { FileGateway, FileRef, FileType, OpenedFile } from '../app/ports'
 
 /**
  * Files in the browser. Chrome and Edge have the File System Access API, which
@@ -15,7 +15,10 @@ interface HandleItem {
   getAsFileSystemHandle?(): Promise<FileSystemHandle | null>
 }
 
-const TYPES = [{ description: 'Lineage flow', accept: { 'application/yaml': ['.yaml', '.yml'] } }]
+const FLOW: FileType = { description: 'Lineage flow', mime: 'application/yaml', extensions: ['.yaml', '.yml'] }
+
+/** A FileType in the shape the native pickers expect. */
+const pickerTypes = (type: FileType) => [{ description: type.description, accept: { [type.mime]: type.extensions } }]
 
 const pickers = () => window as unknown as PickerWindow
 const handleOf = (ref: FileRef | null) => (ref?.handle as FileSystemFileHandle | null | undefined) ?? null
@@ -37,11 +40,11 @@ async function fromFile(file: File, handle: FileSystemFileHandle | null): Promis
 const fromHandle = async (handle: FileSystemFileHandle) => fromFile(await handle.getFile(), handle)
 
 /** Fallback open: a hidden <input type="file">. */
-function pickWithInput(): Promise<File | null> {
+function pickWithInput(type: FileType): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input')
     input.type = 'file'
-    input.accept = '.yaml,.yml'
+    input.accept = type.extensions.join(',')
     input.addEventListener('change', () => resolve(input.files?.[0] ?? null))
     input.addEventListener('cancel', () => resolve(null))
     input.click()
@@ -69,11 +72,32 @@ export function createBrowserFiles(): FileGateway {
     async open() {
       const { showOpenFilePicker } = pickers()
       if (!showOpenFilePicker) {
-        const file = await pickWithInput()
+        const file = await pickWithInput(FLOW)
         return file && fromFile(file, null)
       }
-      const picked = await unlessCancelled(() => showOpenFilePicker.call(window, { types: TYPES }))
+      const picked = await unlessCancelled(() => showOpenFilePicker.call(window, { types: pickerTypes(FLOW) }))
       return picked && fromHandle(picked[0])
+    },
+
+    async openText(type) {
+      const { showOpenFilePicker } = pickers()
+      const file = showOpenFilePicker
+        ? await unlessCancelled(async () => (await showOpenFilePicker.call(window, { types: pickerTypes(type) }))[0].getFile())
+        : await pickWithInput(type)
+      return file && { name: file.name, text: await file.text() }
+    },
+
+    async saveText({ name, text }, type) {
+      const { showSaveFilePicker } = pickers()
+      if (!showSaveFilePicker) {
+        download(name, text)
+        return true
+      }
+      const picked = await unlessCancelled(() =>
+        showSaveFilePicker.call(window, { suggestedName: name, types: pickerTypes(type) }),
+      )
+      if (picked) await write(picked, text)
+      return !!picked
     },
 
     async fromDrop(transfer) {
@@ -107,7 +131,7 @@ export function createBrowserFiles(): FileGateway {
         download(name, text)
         return { ref: { name, handle: null }, lastModified: Date.now() }
       }
-      const picked = await unlessCancelled(() => showSaveFilePicker.call(window, { suggestedName: name, types: TYPES }))
+      const picked = await unlessCancelled(() => showSaveFilePicker.call(window, { suggestedName: name, types: pickerTypes(FLOW) }))
       return picked && write(picked, text)
     },
 

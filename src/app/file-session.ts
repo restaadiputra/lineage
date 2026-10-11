@@ -1,10 +1,13 @@
 import type { FlowStore } from './flow-store'
+import { flowFileName } from './file-names'
 import type { FileGateway, FileRef, OpenedFile } from './ports'
 
 export interface FileSessionDeps {
   store: FlowStore
   files: FileGateway
   pollMs?: number
+  /** Lets another feature take a dropped file that is not a flow (a layout file). True when it did. */
+  claimDrop?(file: OpenedFile): boolean
 }
 
 /** Open, save and watch the flow file behind the editor. */
@@ -27,16 +30,7 @@ export interface FileSession {
 
 const reasonOf = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
-function fileNameFor(flowName: string): string {
-  const slug = flowName
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-  return `${slug || 'untitled'}.flow.yaml`
-}
-
-export function createFileSession({ store, files, pollMs = 1000 }: FileSessionDeps): FileSession {
+export function createFileSession({ store, files, pollMs = 1000, claimDrop }: FileSessionDeps): FileSession {
   let ref: FileRef | null = null
   let lastModified = 0
   let checking = false
@@ -79,12 +73,17 @@ export function createFileSession({ store, files, pollMs = 1000 }: FileSessionDe
   const session: FileSession = {
     open: () => attempt('open the file', async () => adopt(await files.open())),
 
-    openDropped: (transfer) => attempt('open the dropped file', async () => adopt(await files.fromDrop(transfer))),
+    openDropped: (transfer) =>
+      attempt('open the dropped file', async () => {
+        const dropped = await files.fromDrop(transfer)
+        if (dropped && claimDrop?.(dropped)) return
+        adopt(dropped)
+      }),
 
     save: () =>
       attempt('save', async () => {
         const { yaml, file, valid } = state()
-        const saved = await files.save(ref, yaml, file?.name ?? fileNameFor(valid?.flow.name ?? ''))
+        const saved = await files.save(ref, yaml, file?.name ?? flowFileName(valid?.flow.name ?? ''))
         if (!saved) return
         ref = saved.ref
         lastModified = saved.lastModified

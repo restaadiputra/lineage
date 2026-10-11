@@ -29,6 +29,8 @@ export interface FlowState {
   settings: Settings
   /** bumped by reveal(); the canvas pans to the selection when it changes */
   revealToken: number
+  /** bumped when saved positions were replaced from outside the canvas (a layout file) */
+  positionsRevision: number
   file: OpenFile | null
   /** newer text found on disk while the editor has unsaved edits */
   diskText: string | null
@@ -44,6 +46,8 @@ export interface FlowState {
   reveal(selection: Selection): void
   /** Accept a rule problem: append it to the file's `ignore:` list. */
   ignoreProblem(entry: { rule: string; node?: string; reason: string }): void
+  /** Tell the canvas to read its saved positions again. */
+  reloadPositions(): void
   setFile(file: OpenFile | null): void
   setDiskText(text: string | null): void
   notify(notice: string | null): void
@@ -92,6 +96,7 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
       selection: null,
       settings: loadSettings(storage),
       revealToken: 0,
+      positionsRevision: 0,
       file: null,
       diskText: null,
       notice: null,
@@ -120,6 +125,7 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
         get().loadYaml(appendIgnore(get().yaml, entry))
       },
 
+      reloadPositions: () => set({ positionsRevision: get().positionsRevision + 1 }),
       setFile: (file) => set({ file }),
       setDiskText: (diskText) => set({ diskText }),
       notify: (notice) => set({ notice }),

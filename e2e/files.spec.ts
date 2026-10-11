@@ -150,3 +150,70 @@ test('opens a file dropped on the window', async ({ app }) => {
   await expect(app.topBar).toContainText('Dropped')
   await expect(app.topBar).toContainText('dropped.flow.yaml')
 })
+
+test.describe('layout file', () => {
+  // The native save and open dialogs cannot be driven, so use the download / upload path everywhere.
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      Reflect.deleteProperty(window, 'showOpenFilePicker')
+      Reflect.deleteProperty(window, 'showSaveFilePicker')
+    })
+  })
+
+  const flowMenu = async (app: App, item: string) => {
+    await app.topBar.getByRole('button', { name: 'Orders dashboard' }).click()
+    await app.page.getByRole('menuitem', { name: item }).click()
+  }
+  const transformOf = (app: App, id: string) => app.node(id).evaluate((element) => element.style.transform)
+
+  test('exports positions and imports them back after a re-layout', async ({ app }) => {
+    const laidOut = await transformOf(app, 'OrdersPage')
+
+    // Arrange: move a node, then export.
+    const box = (await app.node('OrdersPage').boundingBox())!
+    await app.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await app.page.mouse.down()
+    await app.page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2 + 60, { steps: 6 })
+    await app.page.mouse.up()
+    const arranged = await transformOf(app, 'OrdersPage')
+    expect(arranged).not.toBe(laidOut)
+
+    const download = app.page.waitForEvent('download')
+    await flowMenu(app, 'Export layout…')
+    const saved = await download
+    expect(saved.suggestedFilename()).toBe('orders-dashboard.flow.layout.json')
+    const layout = JSON.parse(await readFile(await saved.path(), 'utf8'))
+    expect(layout).toMatchObject({ version: 1, flow: 'Orders dashboard' })
+    expect(Object.keys(layout.positions)).toHaveLength(21)
+    expect(Object.keys(layout.positions)).toEqual([...Object.keys(layout.positions)].sort())
+
+    // Lose the arrangement, then bring it back from the file.
+    await app.page.getByRole('button', { name: 'Re-layout' }).click()
+    await expect.poll(() => transformOf(app, 'OrdersPage')).toBe(laidOut)
+
+    const chooser = app.page.waitForEvent('filechooser')
+    await flowMenu(app, 'Import layout…')
+    await (await chooser).setFiles(await saved.path())
+
+    await expect(app.status).toContainText('Layout applied to 21 of 21 nodes')
+    const restored = layout.positions.OrdersPage
+    await expect
+      .poll(() => transformOf(app, 'OrdersPage'))
+      .toBe(`translate(${restored.x}px, ${restored.y}px)`)
+  })
+
+  test('a layout file dropped on the window is applied, not opened as a flow', async ({ app }) => {
+    await app.page.evaluate(() => {
+      const text = JSON.stringify({ version: 1, flow: 'Orders dashboard', positions: { App: { x: 900, y: 500 } } })
+      const transfer = new DataTransfer()
+      transfer.items.add(new File([text], 'team.flow.layout.json', { type: 'application/json' }))
+      for (const type of ['dragover', 'drop'])
+        window.dispatchEvent(new DragEvent(type, { dataTransfer: transfer, bubbles: true, cancelable: true }))
+    })
+
+    await expect(app.status).toContainText('Layout applied to 1 of 21 nodes')
+    await expect.poll(() => transformOf(app, 'App')).toBe('translate(900px, 500px)')
+    await expect(app.nodes).toHaveCount(21)
+    await expect(app.topBar).not.toContainText('team.flow.layout.json')
+  })
+})

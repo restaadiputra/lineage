@@ -36,8 +36,13 @@ export function CanvasToolbar({ onRelayout }: { onRelayout(): void }) {
         ))}
       </div>
       <span className="top-bar__spacer" />
-      <button type="button" className="btn" onClick={() => void fitView(fitOptions())}>
-        Fit
+      <button
+        type="button"
+        className="btn"
+        title="Zoom out until the whole diagram is in view"
+        onClick={() => void fitView(fitOptions())}
+      >
+        Fit all
       </button>
       <button type="button" className="btn" onClick={onRelayout} title="Discard moved positions and lay out again">
         <LayoutIcon />

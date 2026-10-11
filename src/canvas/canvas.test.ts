@@ -7,6 +7,7 @@ import { computeFocus } from './focus'
 import { layoutGraph } from './layout'
 import { MAX_PROPS, sizeOf, visibleProps } from './node-size'
 import { buildViewEdges } from './view-edges'
+import { boundsOf, READABLE_ZOOM, readableViewport } from './viewport'
 
 function load(text = sample) {
   const { valid } = analyze(text)
@@ -191,5 +192,44 @@ describe('layoutGraph', () => {
     expect(positions.App.y).toBeLessThan(positions.Header.y)
     expect(positions.OrdersPage.y).toBeLessThan(positions.orders.y)
     expect(positions.OrderList.y).toBeLessThan(positions.OrderRow.y)
+  })
+})
+
+describe('readableViewport', () => {
+  const view = { width: 660, height: 690 }
+
+  it('shows a small diagram whole and centered, never enlarged', () => {
+    const viewport = readableViewport({ x: 100, y: 50, width: 300, height: 200 }, view)
+    expect(viewport.zoom).toBe(1)
+    expect(viewport.x).toBe(660 / 2 - 250)
+    expect(viewport.y).toBe(690 / 2 - 150)
+  })
+
+  it('shrinks to fit while the text stays readable', () => {
+    const viewport = readableViewport({ x: 0, y: 0, width: 765, height: 400 }, view)
+    expect(viewport.zoom).toBeCloseTo(0.8)
+  })
+
+  it('stops shrinking at the readable zoom and keeps a wide diagram centered', () => {
+    const viewport = readableViewport({ x: 0, y: 0, width: 1348, height: 600 }, view)
+    expect(viewport.zoom).toBe(READABLE_ZOOM)
+    expect(viewport.x).toBe(660 / 2 - 674 * READABLE_ZOOM)
+    expect(viewport.y).toBe(690 / 2 - 300 * READABLE_ZOOM)
+  })
+
+  it('starts a tall diagram at its top', () => {
+    const viewport = readableViewport({ x: 0, y: 40, width: 1348, height: 2000 }, view)
+    // The top edge of the diagram sits one padding below the top of the view.
+    expect(40 * viewport.zoom + viewport.y).toBe(24)
+  })
+
+  it('finds the bounds of a set of rectangles', () => {
+    expect(boundsOf([])).toBeNull()
+    expect(
+      boundsOf([
+        { x: 10, y: 20, width: 100, height: 40 },
+        { x: -30, y: 50, width: 50, height: 200 },
+      ]),
+    ).toEqual({ x: -30, y: 20, width: 140, height: 230 })
   })
 })

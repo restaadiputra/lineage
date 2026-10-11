@@ -8,9 +8,11 @@ import {
   type NodeChange,
 } from '@xyflow/react'
 import '@xyflow/react/dist/base.css'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react'
 import type { ValidFlow } from '../../app/analyze'
+import type { Rect } from '../../canvas/edge-geometry'
 import { sizeOf } from '../../canvas/node-size'
+import { boundsOf, READABLE_ZOOM, readableViewport } from '../../canvas/viewport'
 import { useFlow, useServices } from '../app-context'
 import { useFocus, useViewEdges } from '../use-focus'
 import './canvas.css'
@@ -32,14 +34,24 @@ function useSyncedNodes(model: CanvasNode[]) {
   return { nodes, onNodesChange }
 }
 
-/** Fit the view each time the diagram was laid out afresh. */
-function useFitOnLayout(layoutId: number, ready: boolean) {
-  const { fitView } = useReactFlow()
+/**
+ * Frame the diagram each time it was laid out afresh. Works from our own
+ * positions and sizes, so it does not depend on React Flow having measured yet.
+ */
+function useFrameOnLayout(layoutId: number, rects: Rect[] | null, container: RefObject<HTMLDivElement | null>) {
+  const { setViewport } = useReactFlow()
+  const latest = useRef(rects)
   useEffect(() => {
-    if (!ready) return
-    const frame = requestAnimationFrame(() => void fitView(fitOptions()))
-    return () => cancelAnimationFrame(frame)
-  }, [layoutId, ready, fitView])
+    latest.current = rects
+  })
+  const ready = rects !== null
+
+  useEffect(() => {
+    const bounds = boundsOf(latest.current ?? [])
+    const view = container.current?.getBoundingClientRect()
+    if (!ready || !bounds || !view) return
+    void setViewport(readableViewport(bounds, view), { duration: fitOptions().duration })
+  }, [layoutId, ready, container, setViewport])
 }
 
 /** Pan to the selected node whenever something asks to reveal it (a problem, a search result, a link). */
@@ -54,7 +66,7 @@ function useRevealSelection() {
     const { x, y } = node.internals.positionAbsolute
     const center = { x: x + (node.measured.width ?? 0) / 2, y: y + (node.measured.height ?? 0) / 2 }
     // Keep the user's zoom unless the text would be too small to read.
-    void setCenter(center.x, center.y, { zoom: Math.max(getZoom(), 0.8), duration: fitOptions().duration })
+    void setCenter(center.x, center.y, { zoom: Math.max(getZoom(), READABLE_ZOOM), duration: fitOptions().duration })
   }, [revealToken, store, getInternalNode, getZoom, setCenter])
 }
 
@@ -88,7 +100,12 @@ function Diagram({ valid }: { valid: ValidFlow }) {
   )
   const edges = useMemo(() => buildCanvasEdges(viewEdges, focus, filters), [viewEdges, focus, filters])
   const { nodes, onNodesChange } = useSyncedNodes(model)
-  useFitOnLayout(layoutId, nodes.length > 0)
+  const container = useRef<HTMLDivElement>(null)
+  const rects = useMemo(
+    () => positions && layoutNodes.filter((n) => positions[n.id]).map((n) => ({ ...positions[n.id], width: n.width, height: n.height })),
+    [positions, layoutNodes],
+  )
+  useFrameOnLayout(layoutId, rects, container)
   useRevealSelection()
 
   const handleNodesChange = useCallback(
@@ -105,7 +122,7 @@ function Diagram({ valid }: { valid: ValidFlow }) {
   return (
     <>
       <CanvasToolbar onRelayout={relayout} />
-      <div className="canvas" data-focused={focus ? true : undefined}>
+      <div className="canvas" ref={container} data-focused={focus ? true : undefined}>
         <ReactFlow
           nodes={nodes}
           edges={edges}

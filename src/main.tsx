@@ -7,6 +7,7 @@ import { createBrowserClipboard } from './adapters/browser-clipboard'
 import { createBrowserFiles } from './adapters/browser-files'
 import { createLocalStorage } from './adapters/local-storage'
 import App from './App.tsx'
+import { createCompareSession } from './app/compare-session'
 import { isLayoutFileName } from './app/file-names'
 import { createFileSession } from './app/file-session'
 import { createFlowStore } from './app/flow-store'
@@ -37,6 +38,7 @@ const services: AppServices = {
   clipboard: createBrowserClipboard(),
   files: createFileSession({ store, files: browserFiles, claimDrop }),
   layout,
+  compare: createCompareSession({ store, files: browserFiles }),
   formatDoc,
   sampleYaml,
 }

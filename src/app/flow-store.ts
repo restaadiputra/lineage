@@ -2,6 +2,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla'
 import type { Diagnostic } from '../model/parse'
 import { analyze, type ValidFlow } from './analyze'
 import { appendIgnore } from './append-ignore'
+import { buildComparison, type Comparison } from './comparison'
 import type { KeyValueStore } from './ports'
 import { loadSettings, saveSettings, type EdgeGroup, type Settings } from './settings'
 
@@ -18,6 +19,9 @@ export interface OpenFile {
   /** text as last read from or written to disk; differs from `yaml` while there are unsaved edits */
   savedText: string
 }
+
+export const INSPECTOR_TABS = ['details', 'problems', 'compare'] as const
+export type InspectorTab = (typeof INSPECTOR_TABS)[number]
 
 export interface FlowState {
   yaml: string
@@ -36,6 +40,9 @@ export interface FlowState {
   diskText: string | null
   /** short confirmation shown in the status bar ("Prompt copied") */
   notice: string | null
+  /** set while the flow (the plan) is compared with a second flow file (the code) */
+  comparison: Comparison | null
+  inspectorTab: InspectorTab
 
   /** Editor typing: text updates now, analysis follows after the debounce. */
   setYaml(text: string): void
@@ -48,6 +55,10 @@ export interface FlowState {
   ignoreProblem(entry: { rule: string; node?: string; reason: string }): void
   /** Tell the canvas to read its saved positions again. */
   reloadPositions(): void
+  /** Compare the flow with the YAML of a second flow file. Reports and does nothing if that file has errors. */
+  compareWith(fileName: string, yamlText: string): void
+  stopComparing(): void
+  setInspectorTab(tab: InspectorTab): void
   setFile(file: OpenFile | null): void
   setDiskText(text: string | null): void
   notify(notice: string | null): void
@@ -66,9 +77,10 @@ export type FlowStore = StoreApi<FlowState>
 
 const YAML_KEY = 'lineage:yaml'
 
-/** Keep the selection only while the node it points at still exists. */
-function keepSelection(selection: Selection | null, valid: ValidFlow | null): Selection | null {
-  return selection && valid?.graph.byId.has(selection.id) ? selection : null
+/** Keep the selection only while the node it points at still exists (in either flow, while comparing). */
+function keepSelection(selection: Selection | null, valid: ValidFlow | null, comparison: Comparison | null): Selection | null {
+  const graph = comparison?.merged.graph ?? valid?.graph
+  return selection && graph?.byId.has(selection.id) ? selection : null
 }
 
 export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowStoreDeps): FlowStore {
@@ -80,7 +92,10 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
     const reanalyze = () => {
       const { diagnostics, valid } = analyze(get().yaml)
       const nextValid = valid ?? get().valid
-      set({ diagnostics, valid: nextValid, selection: keepSelection(get().selection, nextValid) })
+      // The plan changed, so the comparison with the same code has to be redone.
+      const previous = get().comparison
+      const comparison = previous && nextValid ? buildComparison(nextValid.flow, previous.code, previous.fileName) : null
+      set({ diagnostics, valid: nextValid, comparison, selection: keepSelection(get().selection, nextValid, comparison) })
     }
 
     const setText = (yaml: string) => {
@@ -100,6 +115,8 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
       file: null,
       diskText: null,
       notice: null,
+      comparison: null,
+      inspectorTab: 'details',
 
       setYaml(text) {
         if (text === get().yaml) return
@@ -113,7 +130,7 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
       },
 
       select(selection) {
-        set({ selection: keepSelection(selection, get().valid) })
+        set({ selection: keepSelection(selection, get().valid, get().comparison) })
       },
 
       reveal(selection) {
@@ -126,6 +143,29 @@ export function createFlowStore({ storage, sampleYaml, debounceMs = 250 }: FlowS
       },
 
       reloadPositions: () => set({ positionsRevision: get().positionsRevision + 1 }),
+      compareWith(fileName, yamlText) {
+        const plan = get().valid?.flow
+        if (!plan) return
+        const { valid: code, diagnostics } = analyze(yamlText)
+        if (!code) {
+          const first = diagnostics.find((d) => d.severity === 'error')?.message ?? 'it is not a valid flow file'
+          get().notify(`Could not compare with ${fileName}: ${first}`)
+          return
+        }
+        set({ comparison: buildComparison(plan, code.flow, fileName), inspectorTab: 'compare' })
+      },
+
+      stopComparing() {
+        const { inspectorTab, selection, valid } = get()
+        set({
+          comparison: null,
+          inspectorTab: inspectorTab === 'compare' ? 'details' : inspectorTab,
+          // A node that only the code had cannot stay selected.
+          selection: keepSelection(selection, valid, null),
+        })
+      },
+
+      setInspectorTab: (inspectorTab) => set({ inspectorTab }),
       setFile: (file) => set({ file }),
       setDiskText: (diskText) => set({ diskText }),
       notify: (notice) => set({ notice }),

@@ -1,6 +1,7 @@
 import { useCallback, useState, type ReactNode } from 'react'
 import { PANEL_LIMITS } from '../../app/settings'
 import { useFlow } from '../app-context'
+import { CompareBar } from './compare-bar'
 import { DiskChangeBanner } from './disk-change-banner'
 import './overlays.css'
 import { ResizeHandle } from './resize-handle'
@@ -34,7 +35,10 @@ export function AppShell({ editor, canvas, inspector }: AppShellProps) {
   return (
     <div className="shell" data-dropping={dropping || undefined}>
       <TopBar onSearch={openSearch} />
-      <DiskChangeBanner />
+      <div className="banners">
+        <DiskChangeBanner />
+        <CompareBar />
+      </div>
       <div className="panels">
         {editorOpen && (
           <>

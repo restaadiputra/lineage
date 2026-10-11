@@ -1,4 +1,8 @@
-/** Names of the files Lineage reads and writes. */
+import type { FileType } from './ports'
+
+/** Names and kinds of the files Lineage reads and writes. */
+
+export const FLOW_FILE_TYPE: FileType = { description: 'Lineage flow', mime: 'application/yaml', extensions: ['.yaml', '.yml'] }
 
 function slug(text: string): string {
   const cleaned = text

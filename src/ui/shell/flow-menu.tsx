@@ -6,10 +6,12 @@ const CONFIRM = 'Replace the current flow? Its YAML has changes that are not sav
 
 /**
  * The flow's name in the top bar. Opens the ways to start over (a new flow, the
- * sample) and to share the canvas arrangement as a `.flow.layout.json` file.
+ * sample), to compare the flow with the code's, and to share the canvas
+ * arrangement as a `.flow.layout.json` file.
  */
 export function FlowMenu() {
-  const { store, files, layout, sampleYaml } = useServices()
+  const { store, files, layout, compare, sampleYaml } = useServices()
+  const comparing = useFlow((s) => !!s.comparison)
   const flowName = useFlow((s) => s.valid?.flow.name) ?? 'Untitled flow'
 
   const replaceWith = (text: string) => {
@@ -24,6 +26,9 @@ export function FlowMenu() {
       items={[
         { label: 'New flow', onSelect: () => replaceWith(NEW_FLOW_YAML) },
         { label: 'Load the sample', onSelect: () => replaceWith(sampleYaml) },
+        comparing
+          ? { label: 'Stop comparing', onSelect: () => store.getState().stopComparing() }
+          : { label: 'Compare with code…', onSelect: () => void compare.pickCode() },
         { label: 'Export layout…', onSelect: () => void layout.exportLayout() },
         { label: 'Import layout…', onSelect: () => void layout.importLayout() },
       ]}

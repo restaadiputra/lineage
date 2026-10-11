@@ -302,3 +302,29 @@
 .ignored .rows {
   margin-top: 10px;
 }
+
+/* Compare */
+.diff__hint {
+  margin-bottom: 8px;
+}
+
+.diff__name {
+  font-weight: 500;
+}
+
+.diff__changes {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0 0;
+  padding-left: 14px;
+  color: var(--muted);
+}
+
+/* These sit inside a .rows item, whose grid would put every word on its own line. */
+.diff__changes li {
+  display: list-item;
+}
+
+.diff__changes code {
+  color: var(--ink);
+}

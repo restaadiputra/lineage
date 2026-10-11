@@ -38,6 +38,7 @@ src/model/typeExpr.ts       Tiny TS type reader + fieldTree() for the impact fie
 src/analysis/impact.ts      computeImpact(): readers, carriers, writers, cascade, re-render simulation
                             computeComponentFocus(): a component's parents, children, data
 src/analysis/rules.ts       runRules() → Problem[], RULES metadata, applyIgnores()
+src/analysis/compare.ts     compareFlows() → FlowDiff (plan vs code), mergeFlows() for the merged diagram
 src/analysis/analysis.test.ts
 src/samples/orders.flow.yaml  Sample with deliberate flaws (exercises every rule)
 
@@ -48,10 +49,11 @@ src/app/                    Application layer (no React, no browser globals; all
   file-session.ts           Open / save / watch the file on disk (reload or "keep mine")
   append-ignore.ts          Adds an entry to `ignore:` without reformatting the file
   layout-file.ts            `.flow.layout.json` format; layout-exchange.ts exports / imports it
+  comparison.ts             Comparison = code flow + diff + merged graph; compare-session.ts picks the code file
   search.ts, prompts.ts, settings.ts, position-repository.ts, describe-component.ts,
   new-flow.ts, file-names.ts
-src/canvas/                 Pure canvas model: view-edges, focus (impact → roles), layout (ELK),
-                            node-size, edge-geometry, badges
+src/canvas/                 Pure canvas model: view-edges, focus (impact → roles), diff-view (plan vs code),
+                            layout (ELK), node-size, edge-geometry, badges, viewport
 src/adapters/               Browser implementations of the ports (localStorage, clipboard, files)
 src/ui/                     React: shell/ (top bar, status bar, search, Ask AI menu), editor/, canvas/, inspector/
 src/main.tsx                Composition root: the only place that picks adapters
@@ -196,7 +198,12 @@ fade, pan to node).
 
 ## Roadmap after v1
 - Canvas editing (keyboard-first add node / connect), writing back to YAML
-- Plan vs code comparison (diff two flow files)
+- ~~Plan vs code comparison (diff two flow files)~~ Done: flow menu → Compare with code… opens a second flow
+  file. The open flow is "the plan", the second file "the code". Both are drawn as one merged diagram: nodes and
+  edges are tagged plan only (blue, dashed), code only (green) or changed (amber); a Compare tab lists every
+  difference and pans to it. The impact view is off while comparing. `source` and `note` are never differences.
+  Render links and effect deps/sets are compared as edges. The comparison is redone when the plan is edited;
+  the code file is read once, not watched.
 - Built-in code reader with ts-morph (no AI) to cross-check AI output
 - ~~Layout file export (`.flow.layout.json`) for sharing positions in the repo~~ Done: flow menu → Export layout… /
   Import layout…, or drop the file on the window. Format: `{ version: 1, flow, positions: { id: { x, y } } }`,

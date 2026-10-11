@@ -352,3 +352,56 @@
 .lg-edge-label[data-role='writer'] {
   --role-text: var(--writer-text);
 }
+
+/* ── Plan versus code ──────────────────────────────────────────────── */
+
+/* Plan only: dashed, because it exists on paper. Code only and changed: solid. */
+[data-diff='plan-only'] {
+  --role: var(--source);
+  --role-text: var(--source);
+}
+
+[data-diff='code-only'] {
+  --role: var(--reader);
+  --role-text: var(--reader-text);
+}
+
+[data-diff='changed'] {
+  --role: var(--warning);
+  --role-text: var(--warning-text);
+}
+
+.lg-node[data-diff] {
+  box-shadow: 0 0 0 1px var(--role);
+}
+
+.lg-node[data-diff='plan-only'] {
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.lg-node__tag {
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  padding: 0 5px;
+  border: 1px solid var(--role);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--role-text);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.lg-edge[data-diff] .lg-edge__line {
+  stroke-width: 2;
+}
+
+/* With the impact view off, the selected node still needs a mark. */
+.canvas[data-comparing] .react-flow__node.selected .lg-node {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}

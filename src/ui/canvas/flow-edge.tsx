@@ -50,7 +50,7 @@ export function FlowEdge({ source, target, data }: EdgeProps<CanvasEdge>) {
     targetY: to.y,
     targetPosition: POSITION[to.side],
   })
-  const label = data.focus?.label
+  const { label } = data
 
   return (
     <g
@@ -58,6 +58,7 @@ export function FlowEdge({ source, target, data }: EdgeProps<CanvasEdge>) {
       data-kind={data.kind}
       data-role={data.focus?.role}
       data-dimmed={data.dimmed || undefined}
+      data-diff={data.diff ?? undefined}
     >
       <path className="lg-edge__line" d={path} />
       {HAS_ARROW[data.kind] && <path className="lg-edge__arrow" d={arrowPath(to)} />}
@@ -66,6 +67,7 @@ export function FlowEdge({ source, target, data }: EdgeProps<CanvasEdge>) {
           <span
             className="lg-edge-label"
             data-role={data.focus?.role}
+            data-diff={data.diff ?? undefined}
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
             {label}

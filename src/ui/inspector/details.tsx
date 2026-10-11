@@ -2,6 +2,7 @@ import type { ValidFlow } from '../../app/analyze'
 import { isDataNode } from '../../model/schema'
 import { useFlow } from '../app-context'
 import { useFocus, useViewEdges } from '../use-focus'
+import { NodeDifference } from './compare'
 import { ComponentDetails, EffectDetails } from './component-details'
 import { DataDetails } from './data-details'
 import { ShapeLegend } from './legend'
@@ -27,8 +28,15 @@ export function Details({ valid }: { valid: ValidFlow }) {
   const focus = useFocus(valid.graph, viewEdges)
   const node = selection && valid.graph.byId.get(selection.id)
 
+  const difference = useFlow((s) => (selection ? s.comparison?.diff.byKey.get(selection.id) : undefined))
+
   if (!node || !focus) return <NothingSelected />
-  if (isDataNode(node)) return focus.impact ? <DataDetails node={node} valid={valid} impact={focus.impact} /> : null
-  if (node.kind === 'effect') return <EffectDetails node={node} />
-  return <ComponentDetails node={node} graph={valid.graph} />
+  return (
+    <>
+      <NodeDifference item={difference} />
+      {isDataNode(node) && focus.impact && <DataDetails node={node} valid={valid} impact={focus.impact} />}
+      {node.kind === 'effect' && <EffectDetails node={node} />}
+      {node.kind === 'component' && <ComponentDetails node={node} graph={valid.graph} />}
+    </>
+  )
 }

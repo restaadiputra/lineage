@@ -52,11 +52,11 @@ describe('buildCanvasNodes', () => {
 
 describe('buildCanvasEdges', () => {
   it('draws every edge when all groups are on', () => {
-    expect(buildCanvasEdges(viewEdges, null, ALL)).toHaveLength(viewEdges.length)
+    expect(buildCanvasEdges({ viewEdges, focus: null, filters: ALL })).toHaveLength(viewEdges.length)
   })
 
   it('hides the groups that are switched off', () => {
-    const kinds = (filters: typeof ALL) => new Set(buildCanvasEdges(viewEdges, null, filters).map((e) => e.data?.kind))
+    const kinds = (filters: typeof ALL) => new Set(buildCanvasEdges({ viewEdges, focus: null, filters }).map((e) => e.data?.kind))
     expect(kinds({ ...ALL, tree: false }).has('tree')).toBe(false)
     expect(kinds({ ...ALL, ownership: false }).has('ownership')).toBe(false)
     // Mutations and derivations travel with the writes toggle.
@@ -65,10 +65,10 @@ describe('buildCanvasEdges', () => {
 
   it('lifts lit routes above the dimmed ones', () => {
     const focus = computeFocus(valid.graph, viewEdges, { id: 'orders' })
-    const edges = buildCanvasEdges(viewEdges, focus, ALL)
+    const edges = buildCanvasEdges({ viewEdges, focus, filters: ALL })
     const lit = edges.find((e) => e.id === 'tree:OrdersPage>Layout')!
     const grey = edges.find((e) => e.id === 'reads:uiStore>Header')!
-    expect(lit).toMatchObject({ zIndex: 1, data: { dimmed: false, focus: { role: 'carrier', label: 'orders' } } })
+    expect(lit).toMatchObject({ zIndex: 1, data: { dimmed: false, label: 'orders', focus: { role: 'carrier' } } })
     expect(grey).toMatchObject({ zIndex: 0, data: { dimmed: true, focus: null } })
   })
 })

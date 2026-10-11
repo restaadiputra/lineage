@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach } from 'vitest'
 import { createMemoryStorage } from '../adapters/memory-storage'
+import { createCompareSession } from '../app/compare-session'
 import { createFileSession } from '../app/file-session'
 import { createFlowStore } from '../app/flow-store'
 import { createLayoutExchange } from '../app/layout-exchange'
@@ -52,6 +53,7 @@ export function renderApp(ui: ReactNode, { yaml, diskText = flowYaml('On disk') 
     clipboard: { copy: async (text) => void copied.push(text) },
     files: createFileSession({ store, files: fake.files }),
     layout: createLayoutExchange({ store, positions, files: fake.files }),
+    compare: createCompareSession({ store, files: fake.files }),
     formatDoc: FORMAT_DOC,
     sampleYaml: sample,
   }

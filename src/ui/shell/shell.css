@@ -172,15 +172,23 @@ kbd {
   color: var(--muted);
 }
 
-/* Banner: file changed on disk */
+/* Banners between the top bar and the panels: file changed on disk, comparing */
+.banners {
+  grid-row: 2;
+}
+
 .banner {
   display: flex;
-  grid-row: 2;
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
   background: color-mix(in srgb, var(--warning) 14%, var(--surface));
   border-bottom: 1px solid var(--hairline);
+}
+
+/* Comparing is a mode, not a warning: tinted with the plan's color instead. */
+.banner--compare {
+  background: color-mix(in srgb, var(--source) 8%, var(--surface));
 }
 
 /* Dragging a file over the window */

@@ -14,7 +14,7 @@ import type { Rect } from '../../canvas/edge-geometry'
 import { sizeOf } from '../../canvas/node-size'
 import { boundsOf, READABLE_ZOOM, readableViewport } from '../../canvas/viewport'
 import { useFlow, useServices } from '../app-context'
-import { useFocus, useViewEdges } from '../use-focus'
+import { useFocus, useShownFlow, useViewEdges } from '../use-focus'
 import './canvas.css'
 import { buildCanvasEdges, buildCanvasNodes, type CanvasNode } from './canvas-model'
 import { CanvasToolbar } from './canvas-toolbar'
@@ -88,17 +88,24 @@ function Diagram({ valid }: { valid: ValidFlow }) {
   const select = useFlow((s) => s.select)
   const filters = useFlow((s) => s.settings.edgeFilters)
 
+  const comparison = useFlow((s) => s.comparison)
+  const diff = comparison?.diff ?? null
+
   const viewEdges = useViewEdges(valid.graph)
-  const focus = useFocus(valid.graph, viewEdges)
+  const impactFocus = useFocus(valid.graph, viewEdges)
+  // While comparing, color means "differs"; the impact view would compete with it.
+  const focus = diff ? null : impactFocus
+  // A comparison gets its own arrangement, so the plan's saved positions are left alone.
+  const positionsKey = comparison ? `${valid.flow.name} ⇄ ${comparison.fileName}` : valid.flow.name
   const layoutNodes = useMemo(() => valid.flow.nodes.map((n) => ({ id: n.id, ...sizeOf(n) })), [valid.flow])
   const layoutEdges = useMemo(() => viewEdges.filter((e) => e.inLayout), [viewEdges])
-  const { positions, layoutId, relayout, commitMoves } = usePositions(valid.flow.name, layoutNodes, layoutEdges)
+  const { positions, layoutId, relayout, commitMoves } = usePositions(positionsKey, layoutNodes, layoutEdges)
 
   const model = useMemo(
-    () => (positions ? buildCanvasNodes({ valid, positions, focus, selectedId }) : []),
-    [valid, positions, focus, selectedId],
+    () => (positions ? buildCanvasNodes({ valid, positions, focus, selectedId, diff }) : []),
+    [valid, positions, focus, selectedId, diff],
   )
-  const edges = useMemo(() => buildCanvasEdges(viewEdges, focus, filters), [viewEdges, focus, filters])
+  const edges = useMemo(() => buildCanvasEdges({ viewEdges, focus, filters, diff }), [viewEdges, focus, filters, diff])
   const { nodes, onNodesChange } = useSyncedNodes(model)
   const container = useRef<HTMLDivElement>(null)
   const rects = useMemo(
@@ -122,7 +129,7 @@ function Diagram({ valid }: { valid: ValidFlow }) {
   return (
     <>
       <CanvasToolbar onRelayout={relayout} />
-      <div className="canvas" ref={container} data-focused={focus ? true : undefined}>
+      <div className="canvas" ref={container} data-focused={focus ? true : undefined} data-comparing={diff ? true : undefined}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -145,7 +152,7 @@ function Diagram({ valid }: { valid: ValidFlow }) {
 }
 
 export function FlowCanvas() {
-  const valid = useFlow((s) => s.valid)
+  const valid = useShownFlow()
   if (!valid) {
     return (
       <p className="canvas-empty">

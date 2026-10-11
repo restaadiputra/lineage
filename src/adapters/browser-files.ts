@@ -1,3 +1,4 @@
+import { FLOW_FILE_TYPE as FLOW } from '../app/file-names'
 import type { FileGateway, FileRef, FileType, OpenedFile } from '../app/ports'
 
 /**
@@ -14,8 +15,6 @@ interface PickerWindow {
 interface HandleItem {
   getAsFileSystemHandle?(): Promise<FileSystemHandle | null>
 }
-
-const FLOW: FileType = { description: 'Lineage flow', mime: 'application/yaml', extensions: ['.yaml', '.yml'] }
 
 /** A FileType in the shape the native pickers expect. */
 const pickerTypes = (type: FileType) => [{ description: type.description, accept: { [type.mime]: type.extensions } }]

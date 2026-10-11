@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import { useStore } from 'zustand'
+import type { CompareSession } from '../app/compare-session'
 import type { FileSession } from '../app/file-session'
 import type { FlowState, FlowStore } from '../app/flow-store'
 import type { LayoutExchange } from '../app/layout-exchange'
@@ -13,6 +14,7 @@ export interface AppServices {
   clipboard: Clipboard
   files: FileSession
   layout: LayoutExchange
+  compare: CompareSession
   /** docs/FORMAT.md, handed to the user's AI by the Ask AI menu */
   formatDoc: string
   /** the built-in example flow, offered again from the flow menu */

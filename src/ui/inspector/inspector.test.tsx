@@ -107,6 +107,29 @@ describe('Inspector, Problems tab', () => {
     expect(section('Notes').getAllByRole('listitem')).toHaveLength(3)
   })
 
+  it('switches tabs with the arrow keys and keeps a single tab stop', async () => {
+    const { user } = renderInspector()
+    const details = screen.getByRole('tab', { name: 'Details' })
+    const problems = screen.getByRole('tab', { name: /Problems/ })
+    expect(details).toHaveAttribute('tabindex', '0')
+    expect(problems).toHaveAttribute('tabindex', '-1')
+
+    details.focus()
+    await user.keyboard('{ArrowRight}')
+    expect(problems).toHaveFocus()
+    expect(problems).toHaveAttribute('aria-selected', 'true')
+    expect(problems).toHaveAttribute('tabindex', '0')
+    expect(screen.getByRole('tabpanel', { name: /Problems/ })).toBeInTheDocument()
+
+    // It wraps, and Home / End jump to the ends.
+    await user.keyboard('{ArrowRight}')
+    expect(details).toHaveFocus()
+    await user.keyboard('{End}')
+    expect(problems).toHaveAttribute('aria-selected', 'true')
+    await user.keyboard('{Home}')
+    expect(details).toHaveAttribute('aria-selected', 'true')
+  })
+
   it('opens a problem, selects its node and explains the fix', async () => {
     const { user, store } = await openProblems()
     const head = screen.getByRole('button', { name: /Header subscribes to all of uiStore/ })

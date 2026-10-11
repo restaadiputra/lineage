@@ -4,6 +4,9 @@ import { defineConfig, devices } from '@playwright/test'
 const PORT = 5180
 const URL = `http://localhost:${PORT}`
 
+// 1280px wide is the smallest window the design promises to work at.
+const viewport = { width: 1280, height: 800 }
+
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
@@ -15,15 +18,16 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    {
-      name: 'chromium',
-      // 1280px wide is the smallest window the design promises to work at.
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
-    },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'], viewport } },
+    // Firefox and Safari have no File System Access API: they exercise the upload/download fallback for real.
+    { name: 'firefox', use: { ...devices['Desktop Firefox'], viewport } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'], viewport } },
   ],
   webServer: {
-    command: `npm run dev -- --port ${PORT} --strictPort`,
+    // The production build, not the dev server: this is what ships, and it must work with no network.
+    command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
     url: URL,
     reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
   },
 })

@@ -33,7 +33,9 @@ for (const scheme of ['light', 'dark'] as const) {
     await expect(app.frame('SearchBox')).toHaveAttribute('data-dimmed', 'true')
 
     // The props that carry the data are named on their edges.
-    await expect(app.page.locator('.lg-edge-label')).toHaveText(['orders', 'orders', 'orders', 'order', 'item'])
+    await expect(app.page.locator('.lg-edge-label')).toHaveText(['orders', 'total', 'orders', 'orders', 'order', 'item'])
+    // `total` is derived from orders, so the prop that carries it is on the route as a consequence.
+    await expect(app.page.locator('.lg-edge-label', { hasText: 'total' })).toHaveAttribute('data-role', 'cascade')
     await expect(app.page.locator('.lg-edge[data-kind="mutates"]')).toHaveAttribute('data-role', 'writer')
 
     // The editor follows the selection.
@@ -117,4 +119,27 @@ test('a broken edit keeps the last valid diagram; a fixed one redraws and persis
   await app.page.reload()
   await app.ready(2)
   await expect(app.topBar).toContainText('Two components')
+})
+
+test('the flow menu starts a new flow and brings the sample back', async ({ app }) => {
+  await app.topBar.getByRole('button', { name: 'Orders dashboard' }).click()
+  await app.page.getByRole('menuitem', { name: 'New flow' }).click()
+
+  await expect(app.nodes).toHaveCount(0)
+  await expect(app.page.getByText('This flow has no nodes yet.')).toBeVisible()
+  await expect(app.status).toContainText('0 nodes')
+
+  // Typed YAML exists nowhere else, so replacing it has to be confirmed.
+  await app.replaceYaml(flowYaml('Scratch', ['Shell']))
+  await app.ready(1)
+  app.page.once('dialog', (dialog) => void dialog.dismiss())
+  await app.topBar.getByRole('button', { name: 'Scratch' }).click()
+  await app.page.getByRole('menuitem', { name: 'Load the sample' }).click()
+  await expect(app.nodes).toHaveCount(1)
+
+  app.page.once('dialog', (dialog) => void dialog.accept())
+  await app.topBar.getByRole('button', { name: 'Scratch' }).click()
+  await app.page.getByRole('menuitem', { name: 'Load the sample' }).click()
+  await app.ready()
+  await expect(app.topBar).toContainText('Orders dashboard')
 })

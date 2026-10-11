@@ -21,7 +21,7 @@ calls). Fonts are bundled from `@fontsource-variable/*`.
 npm install
 npm run dev        # Vite dev server
 npm test           # vitest: engine, application layer and React component tests (jsdom)
-npm run test:e2e   # Playwright, Chromium at 1280x800; starts its own dev server on port 5180
+npm run test:e2e   # Playwright (Chromium, Firefox, WebKit) at 1280x800, against the production build on port 5180
 npm run build      # tsc -b && vite build
 npm run lint       # oxlint
 ```
@@ -80,11 +80,15 @@ Tests:
   `src/testing/render-app.tsx` with in-memory adapters. They start with
   `// @vitest-environment jsdom`. jsdom has no layout, so React Flow rendering
   and editor typing are left to Playwright.
-- `e2e/*.spec.ts`: Playwright. The `app` fixture loads the sample and fails a
-  test when the browser console has an error or warning. File tests use the
-  upload/download fallback and real handles from the browser's private file
-  system, because native file pickers cannot be automated. First run needs
-  `npx playwright install --only-shell chromium`.
+- `e2e/*.spec.ts`: Playwright, in Chromium, Firefox and WebKit, against the
+  production build. The `app` fixture loads the sample and fails a test when
+  the browser console has an error or warning, or when the page requests
+  anything from another origin (the offline guarantee). File tests use the
+  upload/download fallback and, in Chromium, real handles from the browser's
+  private file system, because native file pickers cannot be automated. First
+  run needs `npx playwright install`.
+- `src/styles/tokens.test.ts` checks every color token for contrast (4.5:1 for
+  text tokens, 3:1 for line tokens) and that the two dark blocks match.
 
 Dependencies point inward: model/analysis ← app and canvas ← adapters and ui ←
 main.tsx. New UI behaviour goes into `src/app` or `src/canvas` as a pure,
@@ -147,7 +151,7 @@ everything else fades to grey.
 
 Layout (left aligned, full-bleed panels separated by hairlines, no floating cards):
 ```
-┌ Lineage  Orders dashboard ▾ │ Open  Save │ Ask AI ▾ │ ⌘K Search │ ◐ ┐
+┌ Lineage  Orders dashboard ▾ │ Open  Save │ Ask AI ▾ │ ⌘K Search │ ◐ ┐   (▾ on the name: New flow / Load the sample)
 ├─ YAML ───────┬──────────── canvas ────────────┬─ Details | Problems ─┤
 │ editor       │                                │ inspector            │
 │ (collapsible)│                                │                      │
@@ -164,12 +168,14 @@ Tokens (define as CSS custom properties on `:root`, dark under
 | surface | #FFFFFF | #1A1F1D | panels, nodes |
 | ink | #17201C | #E4E9E6 | text |
 | muted | #66706B | #8E9893 | secondary text |
-| hairline | #DCE1DE | #2A322E | borders, idle edges |
+| hairline | #DCE1DE | #2A322E | panel borders, dimmed edges |
+| line | #848C88 | #757F7A | idle node borders and edges (3:1 on canvas) |
 | source | #2F55D4 | #7C97FF | selected data, focus ring |
 | reader | #0F8A6C | #3CC8A0 | reads |
 | writer | #D9480F | #FF8A4C | writes |
 | rerender | #7C3AED | #A98BFF | re-render outline |
 | error / warning / info | #C8323F / #B7791F / #4F6B8A | #F26B76 / #E0A84A / #8FA8C8 | problems |
+| reader-text / writer-text / warning-text | #0B7259 / #B83C0B / #8A5A12 | same as base | those three as small text (base colors are below AA on white) |
 
 Type: Instrument Sans Variable for UI (13px base; scale 12 / 13 / 15 / 18,
 weights 400/500/600). JetBrains Mono Variable only for code identifiers

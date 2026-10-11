@@ -80,18 +80,39 @@ export class App {
   }
 }
 
+/**
+ * Console messages that are advice from a browser about a technique, not a
+ * fault in the app. Keep this list short and explain every entry.
+ */
+const BROWSER_ADVISORIES = [
+  // Firefox, about the code editor keeping its gutter in place while scrolling.
+  'scroll-linked positioning effect',
+]
+
 interface Fixtures {
-  /** The app, loaded with the sample. Fails the test if the browser console is not clean. */
+  /**
+   * The app, loaded with the sample. Fails the test if the browser console is
+   * not clean or if the page requested anything from another origin.
+   */
   app: App
 }
 
 export const test = base.extend<Fixtures>({
   // Playwright calls this callback `use`; it is named `provide` here so the
   // React hooks lint rule does not mistake it for React's `use` hook.
-  app: async ({ page }, provide) => {
+  app: async ({ page, baseURL }, provide) => {
     const problems: string[] = []
+    // Lineage must work offline: nothing may be fetched from anywhere but the app itself.
+    const external: string[] = []
+    page.on('request', (request) => {
+      const url = new URL(request.url())
+      const local = ['data:', 'blob:'].includes(url.protocol) || url.origin === new URL(baseURL ?? '').origin
+      if (!local) external.push(request.url())
+    })
     page.on('console', (message) => {
-      if (message.type() === 'error' || message.type() === 'warning') problems.push(`${message.type()}: ${message.text()}`)
+      const serious = message.type() === 'error' || message.type() === 'warning'
+      if (serious && !BROWSER_ADVISORIES.some((advisory) => message.text().includes(advisory)))
+        problems.push(`${message.type()}: ${message.text()}`)
     })
     page.on('pageerror', (error) => problems.push(`uncaught: ${error.message}`))
 
@@ -101,6 +122,7 @@ export const test = base.extend<Fixtures>({
     await provide(app)
 
     expect(problems, 'browser console should be clean').toEqual([])
+    expect(external, 'no request may leave the app').toEqual([])
   },
 })
 

@@ -56,6 +56,7 @@ test.describe('without the File System Access API (Firefox, Safari)', () => {
  * system, so reading, writing and watching run through the genuine API.
  */
 test.describe('with a file handle', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'writable file handles exist only in Chromium browsers')
   const NAME = 'watched.flow.yaml'
 
   const writeFile = (page: Page, text: string) =>

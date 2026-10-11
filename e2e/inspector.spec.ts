@@ -74,10 +74,12 @@ test('search closes on Escape without touching the selection', async ({ app }) =
 })
 
 test.describe('Ask AI', () => {
-  test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
-  const clipboard = (page: import('@playwright/test').Page) => page.evaluate(() => navigator.clipboard.readText())
+  test.describe('clipboard', () => {
+    test.skip(({ browserName }) => browserName !== 'chromium', 'only Chromium lets a test read the clipboard back')
+    test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
+    const clipboard = (page: import('@playwright/test').Page) => page.evaluate(() => navigator.clipboard.readText())
 
-  test('copies both prompts with the real format spec', async ({ app }) => {
+    test('copies both prompts with the real format spec', async ({ app }) => {
     await app.page.getByRole('button', { name: 'Ask AI' }).click()
     await app.page.getByRole('menuitem', { name: 'Copy prompt: code → diagram' }).click()
     await expect(app.status).toContainText('Prompt copied')
@@ -91,6 +93,7 @@ test.describe('Ask AI', () => {
     const diagramToCode = await clipboard(app.page)
     expect(diagramToCode).toContain('name: Orders dashboard')
     expect(diagramToCode).toContain('# Lineage flow format (version 1)')
+    })
   })
 
   test('downloads FORMAT.md', async ({ app }) => {

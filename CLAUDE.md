@@ -22,6 +22,8 @@ npm install
 npm run dev        # Vite dev server
 npm test           # vitest: engine, application layer and React component tests (jsdom)
 npm run test:e2e   # Playwright (Chromium, Firefox, WebKit) at 1280x800, against the production build on port 5180
+npm run build:vscode   # VS Code extension: webview bundle → vscode/media, extension → vscode/out
+npm run test:vscode    # runs the extension inside a real VS Code (uses the installed one, else downloads a copy)
 npm run build      # tsc -b && vite build
 npm run lint       # oxlint
 ```
@@ -63,9 +65,14 @@ src/reader/                 Code reader: React source → flow file, without AI 
   source-files.ts           Input / output types and isReadable(); safe to import without the compiler
 fixtures/orders-app/        The sample as real React code; input for the reader's tests. Not compiled or linted.
 src/adapters/               Browser implementations of the ports (localStorage, clipboard, files, lazy code reader)
+src/compose.tsx             composeServices(environment) + mountApp(): shared by every entry point
+src/vscode/                 Webview side of the VS Code extension: protocol.ts (the message contract),
+                            host-bridge, host-adapters (ports backed by the extension), sync, webview-main.tsx
+vscode/                     The extension: src/extension.ts, flow-editor.ts (custom editor), pure.ts (testable
+                            parts: page + CSP, minimal edits), test/ (runs inside VS Code)
 src/ui/                     React: shell/ (top bar, status bar, search, menus), editor/, canvas/, inspector/,
                             editing/ (Add node and Connect dialogs)
-src/main.tsx                Composition root: the only place that picks adapters
+src/main.tsx                Composition root for the browser: the only place that picks the browser adapters
 ```
 
 Engine rules (pure functions, all tested):
@@ -232,4 +239,9 @@ fade, pan to node).
   Import layout…, or drop the file on the window. Format: `{ version: 1, flow, positions: { id: { x, y } } }`,
   ids sorted and coordinates rounded so it diffs cleanly. Import keeps positions of nodes the file does not name.
   The browser cannot read the file next to an opened flow by itself, so loading it is a manual step.
-- VS Code extension wrapper
+- ~~VS Code extension wrapper~~ Done: `vscode/` is an extension with a custom editor for `*.flow.yaml`. It hosts
+  the same app in a webview (`src/vscode/webview-main.tsx`), synced both ways with the VS Code text document, so
+  edits by Copilot or the text editor redraw the diagram and canvas edits change the text. Rule problems go to
+  the Problems panel; "Open" on a node's `source` jumps to the code; a sibling `.flow.layout.json` is applied on
+  open. See `vscode/README.md`. Not done: publishing to the marketplace (publisher id is a placeholder), an
+  icon, and writing moved positions back to the layout file automatically (Export layout… does it by hand).

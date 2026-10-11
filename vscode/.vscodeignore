@@ -1,0 +1,7 @@
+# Only the built extension, the webview bundle, the manifest and the readme are shipped.
+src/**
+test/**
+out/test/**
+tsconfig.json
+media/webview.html
+**/*.map

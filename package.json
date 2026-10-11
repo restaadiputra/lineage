@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:webview": "vite build --config vite.webview.config.ts",
+    "build:extension": "esbuild vscode/src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=vscode/out/extension.js",
+    "build:vscode": "npm run build:webview && npm run build:extension",
+    "test:vscode": "npm run build:vscode && esbuild vscode/test/suite.ts --bundle --platform=node --format=cjs --external:vscode --outfile=vscode/out/test/suite.js && node vscode/test/run.mjs"
   },
   "dependencies": {
     "@codemirror/lang-yaml": "^6.1.3",
@@ -39,7 +43,10 @@
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
+    "@types/vscode": "^1.100.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vscode/test-electron": "^3.1.0",
+    "esbuild": "^0.28.2",
     "jsdom": "^30.1.2",
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2",

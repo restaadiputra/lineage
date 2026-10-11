@@ -12,6 +12,12 @@ dist
 dist-ssr
 test-results
 playwright-report
+
+# VS Code extension build output and test editor
+vscode/media
+vscode/out
+.vscode-test
+*.vsix
 *.local
 
 # Editor directories and files

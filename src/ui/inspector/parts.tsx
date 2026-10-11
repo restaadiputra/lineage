@@ -53,7 +53,7 @@ export function ReasonRows({ rows }: { rows: Iterable<[id: string, reason: React
 
 /** `source` as written in the file, with a button to copy it for the editor's go-to-file. */
 function SourceLine({ source }: { source: string }) {
-  const { clipboard } = useServices()
+  const { clipboard, host } = useServices()
   const notify = useFlow((s) => s.notify)
   const copy = () =>
     clipboard.copy(source).then(
@@ -64,6 +64,11 @@ function SourceLine({ source }: { source: string }) {
   return (
     <p className="source">
       <code>{source}</code>
+      {host.openSource && (
+        <button type="button" className="btn btn--small" onClick={() => host.openSource?.(source)}>
+          Open
+        </button>
+      )}
       <button type="button" className="btn btn--small" onClick={() => void copy()}>
         Copy
       </button>

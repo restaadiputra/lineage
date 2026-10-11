@@ -12,7 +12,7 @@ import { createLayoutExchange } from '../app/layout-exchange'
 import { createPositionRepository } from '../app/position-repository'
 import type { SourceInput } from '../reader/source-files'
 import sample from '../samples/orders.flow.yaml?raw'
-import { AppContext, type AppServices } from '../ui/app-context'
+import { AppContext, type AppServices, type HostFeatures } from '../ui/app-context'
 import { fakeDisk } from './fake-disk'
 
 afterEach(() => {
@@ -37,13 +37,16 @@ interface RenderAppOptions {
   yaml?: string
   /** contents of the fake file behind Open / Save */
   diskText?: string
+  /** defaults to a plain browser tab */
+  host?: HostFeatures
 }
 
 /**
  * Renders UI with the same services main.tsx provides, but with in-memory
  * adapters, and returns them so a test can inspect or drive the outside world.
  */
-export function renderApp(ui: ReactNode, { yaml, diskText = flowYaml('On disk') }: RenderAppOptions = {}) {
+export function renderApp(ui: ReactNode, options: RenderAppOptions = {}) {
+  const { yaml, diskText = flowYaml('On disk') } = options
   const storage = createMemoryStorage(yaml === undefined ? {} : { 'lineage:yaml': yaml })
   const store = createFlowStore({ storage, sampleYaml: sample, debounceMs: 0 })
   const fake = fakeDisk(diskText)
@@ -62,6 +65,7 @@ export function renderApp(ui: ReactNode, { yaml, diskText = flowYaml('On disk') 
     code: createCodeSession({ store, files: fake.files, reader, session }),
     formatDoc: FORMAT_DOC,
     sampleYaml: sample,
+    host: options.host ?? { embedded: false },
   }
 
   // userEvent.setup() must run before render so its document hooks are in place.

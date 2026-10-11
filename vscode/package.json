@@ -1,0 +1,73 @@
+{
+  "name": "lineage",
+  "displayName": "Lineage",
+  "description": "See a .flow.yaml file as a diagram of React data flow: what reads, writes and re-renders, checked against React rules.",
+  "version": "0.1.0",
+  "publisher": "lineage",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Visualization",
+    "Linters"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "lineage.flow",
+        "displayName": "Lineage diagram",
+        "selector": [
+          {
+            "filenamePattern": "*.flow.yaml"
+          },
+          {
+            "filenamePattern": "*.flow.yml"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "commands": [
+      {
+        "command": "lineage.openDiagram",
+        "title": "Open diagram",
+        "category": "Lineage"
+      },
+      {
+        "command": "lineage.openDiagramToSide",
+        "title": "Open diagram to the side",
+        "category": "Lineage",
+        "icon": "$(type-hierarchy)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "lineage.openDiagramToSide",
+          "when": "resourceFilename =~ /\\.flow\\.ya?ml$/ && activeCustomEditorId != 'lineage.flow'",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "lineage.openDiagram",
+          "when": "resourceFilename =~ /\\.flow\\.ya?ml$/",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "lineage.openDiagram",
+          "when": "resourceFilename =~ /\\.flow\\.ya?ml$/"
+        },
+        {
+          "command": "lineage.openDiagramToSide",
+          "when": "resourceFilename =~ /\\.flow\\.ya?ml$/"
+        }
+      ]
+    }
+  }
+}
